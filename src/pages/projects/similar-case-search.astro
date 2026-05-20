@@ -1,8 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
-// 设计稿(Figma CS页面 → 内容 frame): 1968 wide × 6221 tall
-// 首屏 = y 0~1440 (含标题/英文/元数据), 后续 = y 1440~6221 (why/what/note + 4 截图)
+// 设计稿(Figma CS页面 → 内容 frame): 1968 wide × 9178 tall
+// 首屏 = y 0~1440 (含标题/英文/元数据), 后续 = y 1440~9178 (why/what/note + 4 截图 + 减法/AI/结语)
 
 // ===== 首屏: 100vh 锁定, 元素横向用 cqw(基于 main 宽), 纵向用 vh(基于 1440 比例) =====
 const firstScreenItems = [
@@ -11,9 +11,9 @@ const firstScreenItems = [
   { x: 1163, y: 1183, w: 502,  fs: 20, color: '#fff',    font: 'mt', align: 'right', lh: 1.2, text: '2025 · Undergraduate Graduation Project\nFastAPI  ·  React  ·  FAISS  ·  DashScope  ·  DeepSeek\ngithub.com/belfiore04/similar_case_search' },
 ];
 
-// ===== 后续 stage: aspect-ratio 1968:4781, 元素 y 已减 1440 转到 stage 坐标 =====
+// ===== 后续 stage: aspect-ratio 1968:7738, 元素 y 已减 1440 转到 stage 坐标 =====
 // `alignBottom: <figma_y_of_bottom>` 表示用 CSS bottom 定位,让正文底对齐图片底
-const STAGE_HEIGHT = 4781; // 6221 - 1440
+const STAGE_HEIGHT = 7738; // 9178 - 1440
 const STAGE_OFFSET = 1440;
 
 const stageItems = [
@@ -46,6 +46,17 @@ const stageItems = [
   { type: 'img', src: '/sc-4-law.png', x: 966, y: 5424, w: 960, h: 602 },
   { x: 727,  y: 5424, w: 198, fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1, text: '相关法律条文' },
   { x: 161,  w: 764, fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1.4, alignBottom: 6026, text: '类案检索本身只走了一半\n\n律师拿到"类似案件"之后\n真正需要的是\n"这些案件具体引用了哪些法条、怎么应用的"\n\n所以我把法条应用从对比报告里独立出来\n律师可以反向以法条为锚\n看哪些类案在用同一个法条\n\n这是写诉状时最需要的检索维度\n而不是停在"找到类似案件"这个 70 分的位置' },
+
+  // A note on 做减法 (y=6226) — 左对齐
+  { x: 202, y: 6226, w: 256, fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: 'A note on 做减法' },
+  { x: 199, y: 6344, w: 931, fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: '项目里我主动砍掉的东西很多\n\n不展示完整判决摘要\n不做大段报告叙述\n不做端到端起诉书生成\n\n砍掉它们的不是因为做不到\n是因为做了之后产品反而更弱\n\n专业场景下\n信息过载比信息不足更影响判断\n\n做减法的勇气比堆\n功能难得多' },
+
+  // A note on AI (y=7076) — 标题在右上, 正文右对齐
+  { x: 1615, y: 7076, w: 195, fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: 'A note on AI' },
+  { x: 879,  y: 7194, w: 931, fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1, text: '一开始我想做"端到端帮律师写诉状"\n\n ▎ 跟法学生朋友聊过之后才发现\n\n他们要的不是一个替自己写诉状的 AI\n要的是"少花两小时翻判决书"\n\n ▎ 在专业、高风险的场景里\n\nAI 的位置是 augmentation\n不是 automation\n\n\n这条判断\n决定了我后面所有的产品取舍' },
+
+  // 结语 (y=8095) — 居中
+  { x: 519, y: 8095, w: 931, fs: 32, color: '#fff', font: 'bd', align: 'center', lh: 1, text: ' 专业产品的标准\n ▎ 不是"AI 能做什么"\n ▎ 是"用户能不能信任 AI 做的"\n ▎ \n\n ▎ 所以我用 "创作自由" 换 "可验证性"\n ▎ 用 "端到端自动化" 换 "augmentation"\n ▎ 用 "信息丰富" 换 "信息克制"\n\n用户到底需要什么？\n\n用户到底到底需要什么？\n\n用户到底到底到底需要什么？' },
 ];
 
 const fontMap: Record<string, string> = {
@@ -70,11 +81,11 @@ const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
     }
     .scs-first > * { position: absolute; white-space: pre-line; }
 
-    /* 后续 stage: aspect-ratio 锁定 1968:4781, 全部 cqw */
+    /* 后续 stage: aspect-ratio 锁定 1968:7738, 全部 cqw */
     .scs-stage {
       position: relative;
       width: 100%;
-      aspect-ratio: 1968 / 4781;
+      aspect-ratio: 1968 / 7738;
       container-type: inline-size;
     }
     .scs-stage > * { position: absolute; white-space: pre-line; }
