@@ -1,0 +1,241 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// 设计稿 (Figma LMT 页面 → 88:317 内容 frame): 1968 wide × 21530 tall
+// Frame 起点 (3664, 21266). 所有坐标已转为 frame-relative.
+// 首屏 = y 0~1440, 后续 stage = y 1440~21530
+
+// 文字颜色: 全部 #FFFFFF,标题中文为 #0049E5
+const C_WHITE = '#FFFFFF';
+const C_BLUE = '#0049E5';
+
+// ===== 首屏 =====
+const firstScreenItems = [
+  { x: 1211, y: 704,  w: 454,  fs: 64, color: C_WHITE, font: 'en', align: 'right', lh: 1,   text: 'Lemon TEA IP DESIGN' },
+  { x: 984,  y: 781,  w: 681,  fs: 96, color: C_BLUE,  font: 'zh', align: 'right', lh: 1,   text: '柠 檬 茶 I P 设 计' },
+  { x: 1263, y: 1183, w: 402,  fs: 20, color: C_WHITE, font: 'mt', align: 'right', lh: 1.2, text: '2025 · Class Project\nAIGC Design Practice · Lemon Tea Brand\n即梦 AI · Procreate · Figma\nbrand collabs\n3 IPs · 6 skin variants · 24 memes' },
+];
+
+const STAGE_HEIGHT = 20090; // 21530 - 1440
+const STAGE_OFFSET = 1440;
+
+// ===== Stage =====
+const stageItems = [
+  // -------- Part 1 · Why is AIGC --------
+  { x: 278,  y: 1510, w: 292,  fs: 32, color: C_WHITE, font: 'bd', align: 'left',  lh: 1,   text: 'Why is AIGC？' },
+  { x: 278,  y: 1648, w: 1387, fs: 32, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: '做 IP 设计,过去意味着\n\n找设计师、画线稿、上色、3D 建模、渲染、做服装变体、做表情包……\n\n一个本科生独自短时间内完成\n并不现实\n\n\n而 2025 年的工具栈给了一个新答案\n\n\n我想用一个完整的、商业级体量的 IP 项目\n来回答一个问题\n\nAIGC 到底能把"设计师的可能性边界"推到哪里?' },
+  { type: 'img', src: '/lt-p1-gege.png',   x: 1121, y: 1747, w: 574, h: 693 },
+  { type: 'img', src: '/lt-p1-didi.png',   x: 669,  y: 2254, w: 490, h: 623 },
+  { type: 'img', src: '/lt-p1-meimei.png', x: 179,  y: 2260, w: 490, h: 611 },
+
+  // -------- Part 2 · What? --------
+  { x: 1053, y: 3114, w: 612,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1,   text: 'What？' },
+  { x: 945,  y: 3252, w: 720,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '  三个鳄鱼角色\n对应三类柠檬茶消费场景\n\n  通勤打工人、运动爱好者、Y2K 潮人\n\xa0\xa0\n  共同设计语言\n\n  半透明冰壳、内部柠檬茶渐变、脑后鳞甲标记年龄\n\xa0\xa0\n  他们不只是"卡通形象"\n\n  是"产品功能可视化"的尝试' },
+
+  // 2.1 哥哥 柠嗨 Sir
+  { type: 'img', src: '/lt-gege-back.png',  x: 395,  y: 3876, w: 550, h: 603 },
+  { x: 295,  y: 4066, w: 50,   fs: 32, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: '2.1' },
+  { type: 'img', src: '/lt-gege-front.png', x: 1300, y: 4411, w: 565, h: 774 },
+  { x: 622,  y: 4479, w: 96,   fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '背视图' },
+  { x: 1006, y: 4566, w: 247,  fs: 64, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '\xa0柠嗨 Sir' },
+  { type: 'img', src: '/lt-gege-side.png',         x: 179,  y: 4889, w: 700, h: 401 },
+  { x: 757,  y: 4729, w: 496,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: 'The Office Crocodile\n\xa0\xa0\n\xa0 成年,职场打工人\n\n\xa0 身体里的柠檬茶会随上班时间变淡\n\xa0 所以每天都需要"充茶"\n\xa0\xa0\n\xa0 绝不内耗,绝不做老好人\n\xa0 只接受建议,不接受羞辱\n\xa0\xa0\n\xa0 爱好: 说唱 · hiphop · 机车\n\xa0 最爱: 鸭屎香柠檬茶' },
+  { x: 1535, y: 5202, w: 96,   fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '正视图' },
+  { x: 456,  y: 5319, w: 96,   fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '侧视图' },
+  { type: 'img', src: '/lt-gege-skin-office.png',  x: 221,  y: 5535, w: 692, h: 718 },
+  { type: 'img', src: '/lt-gege-skin-hiphop.png',  x: 1140, y: 5535, w: 545, h: 718 },
+  { x: 523,  y: 6280, w: 160,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '打工人皮肤' },
+  { x: 1335, y: 6280, w: 128,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '嘻哈皮肤' },
+
+  // 2.2 弟弟 柠 Boom 崽
+  { x: 301,  y: 6498, w: 50,   fs: 32, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: '2.2' },
+  { type: 'img', src: '/lt-didi-front.png', x: 318,  y: 6536, w: 587, h: 746 },
+  { x: 1010, y: 6738, w: 346,  fs: 64, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: '柠 Boom 崽' },
+  { x: 1010, y: 6880, w: 675,  fs: 32, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: 'The Energy Kid\n\xa0\xa0\xa0\n醒来就能跳三段跳的小鳄鱼。\n还在发育,所以脑后还没长出成熟鳞甲。\n\xa0\xa0\n哪儿有运动,哪儿就有他的"Boom Boom"音效。\n\xa0\xa0\n爱好: 篮球 · 攀岩 · city walk · 滑板\n最爱: 花果柠檬茶' },
+  { x: 564,  y: 7282, w: 96,   fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '正视图' },
+  { type: 'img', src: '/lt-didi-side.png', x: 660,  y: 7282, w: 1138, h: 695 },
+  { type: 'img', src: '/lt-didi-back.png', x: 178,  y: 7748, w: 478,  h: 746 },
+  { x: 1133, y: 8009, w: 96,   fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '侧视图' },
+  { x: 369,  y: 8536, w: 96,   fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '背视图' },
+  { type: 'img', src: '/lt-didi-skin-island.png',   x: 369,  y: 8653, w: 554, h: 785 },
+  { type: 'img', src: '/lt-didi-skin-dopamine.png', x: 1133, y: 8653, w: 550, h: 784 },
+  { x: 530,  y: 9470, w: 192,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '海岛度假皮肤' },
+  { x: 1321, y: 9470, w: 160,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '多巴胺皮肤' },
+
+  // 2.3 妹妹 柠萌Pink
+  { x: 297,  y: 9688, w: 50,   fs: 32, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: '2.3' },
+  { type: 'img', src: '/lt-meimei-front.png', x: 418, y: 9764, w: 416, h: 686 },
+  { x: 1006, y: 9928, w: 274,  fs: 64, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: '柠萌Pink' },
+  { x: 1006, y: 10070, w: 491, fs: 32, color: C_WHITE, font: 'bd', align: 'left',  lh: 1.2, text: '\nThe Y2K Girl\n\xa0\xa0\n灵感系列,所以身体不是传统的绿。\nY2K 文化大使(自称)、跳舞精灵。\n\xa0\xa0\n谁说鳄鱼不能很 Girl。\n\xa0\xa0\n爱好: 跳舞 · 轮滑 · 收集 Y2K 饰品\n最爱: 葡萄鸭屎香柠檬茶' },
+  { x: 560,  y: 10472, w: 96,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '正视图' },
+  { type: 'img', src: '/lt-meimei-back.png', x: 1172, y: 10528, w: 390, h: 662 },
+  { type: 'img', src: '/lt-meimei-side.png', x: 263,  y: 10546, w: 658, h: 644 },
+  { x: 1294, y: 11193, w: 96,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '背视图' },
+  { x: 543,  y: 11212, w: 96,  fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: '侧视图' },
+  { type: 'img', src: '/lt-meimei-skin-pink.png', x: 356,  y: 11346, w: 472, h: 709 },
+  { type: 'img', src: '/lt-meimei-skin-y2k.png',  x: 1121, y: 11367, w: 491, h: 688 },
+  { x: 533,  y: 12100, w: 145, fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: 'PINK皮肤' },
+  { x: 1251, y: 12110, w: 226, fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: 'Y2K Crocodile' },
+
+  // -------- Part 3 · memes --------
+  { x: 1052, y: 12392, w: 699, fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: 'memes' },
+  { x: 1003, y: 12536, w: 748, fs: 32, color: C_WHITE, font: 'bd', align: 'right', lh: 1.2, text: 'IP 形象之外,表情包是 IP "真正活起来"的关键\n\n  传统流程: 一张表情包至少要美术稿+动效\n  7 张 = 一周\n\n  用即梦 AI\n  把角色基础形象作为参考\n\n  情绪和场景用文字描述\n  7 张 = 一个晚上' },
+  { type: 'img', src: '/lt-meme-bixin.gif',  x: 213, y: 13057, w: 600, h: 600 },
+  { x: 920, y: 13515, w: 425, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: '比心\n\n一杯柠檬茶 带来一天好心情' },
+  { type: 'img', src: '/lt-meme-fei.gif',    x: 213, y: 13757, w: 600, h: 600 },
+  { x: 920, y: 14215, w: 530, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: '气"沸"我了\n\n内心躁动...不对,是柠檬茶躁动' },
+  { type: 'img', src: '/lt-meme-want.gif',   x: 213, y: 14457, w: 600, h: 600 },
+  { x: 920, y: 14915, w: 530, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: '想喝柠檬茶\n\n好想喝柠檬茶' },
+  { type: 'img', src: '/lt-meme-gym.gif',    x: 218, y: 15157, w: 600, h: 600 },
+  { x: 920, y: 15615, w: 530, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: '撸铁\n\n带上一杯柠檬茶 活力满满来健身' },
+  { type: 'img', src: '/lt-meme-fall.gif',   x: 218, y: 15857, w: 600, h: 600 },
+  { x: 920, y: 16315, w: 530, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: '我倒\n\n自嘲时不丢面子' },
+  { type: 'img', src: '/lt-meme-dance.gif',  x: 213, y: 16557, w: 600, h: 600 },
+  { x: 920, y: 17015, w: 530, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: '跳舞\n\n你你你你要跳舞吗' },
+  { type: 'img', src: '/lt-meme-selfie.gif', x: 213, y: 17257, w: 600, h: 600 },
+  { x: 920, y: 17715, w: 530, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: '美美自拍\n\nY2K 全粉套装,镜头感拉满' },
+
+  // -------- Part 4 · On collaborations --------
+  { x: 213, y: 18019, w: 699, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: 'On collaborations' },
+  { x: 213, y: 18163, w: 748, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: 'IP 真正的商业价值,在于它能"长出去"\n\n\n潮流时尚(Gentle Monster · Oakley · Acne)\n糖果元气(Miu Miu · Y2K · 多巴胺)\n\n不是为了真的发起合作——\n\n而是想看 AI 能否把 IP 角色\n准确地"植入"这些视觉语言里' },
+  { type: 'img', src: '/lt-collab-gege.png',   x: 1135, y: 18495, w: 704, h: 691, flat: true },
+  { type: 'img', src: '/lt-collab-didi.png',   x: 485,  y: 18625, w: 853, h: 648, flat: true },
+  { type: 'img', src: '/lt-collab-meimei.png', x: 650,  y: 19024, w: 837, h: 498, flat: true },
+
+  // -------- Part 5 · A Note on AIGC --------
+  { x: 143, y: 19792, w: 993, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: 'A Note on AIGC' },
+  { x: 150, y: 19930, w: 993, fs: 32, color: C_WHITE, font: 'bd', align: 'left', lh: 1.2, text: 'AIGC 不是提示词 → IP\n写提示词只是入口\n\nAI 总是自己发挥\n你说"画一只柠檬鳄鱼"\n它会顺手给你配上太阳镜、滑板、街头背景\n都是它觉得"应该有"的东西\n\n所以好的提示词工程\n一半在写"要做什么"\n一半在写"不要做什么"\n\n另外是判断\n\n什么时候让它继续、什么时候喊停\n哪些它做得很好但不该收进作品\n以及不被它自己的审美悄悄带走\n\nAI 一晚上能出一千张图\n从里面挑出能用的七张\n才是真正的设计动作' },
+
+  // -------- 结语 --------
+  { x: 0, y: 20934, w: 1968, fs: 32, color: C_WHITE, font: 'bd', align: 'center', lh: 1.6, text: '工具决定可能性边界\n判断决定作品高度\n\n\n这个项目想验证的不是 AI 多强\n\xa0\xa0\n\xa0 而是\n\n一个学计算机的学生 + 一套好用的工具\n能不能完成过去只有一整个团队才能完成的事\n\n\nAI没替我做任何取舍' },
+];
+
+const fontMap: Record<string, string> = {
+  zh: '"Assistant", "Noto Serif SC", "Songti SC", serif',
+  en: '"Bebas Neue", sans-serif',
+  mt: '"Kameron", "Noto Serif SC", serif',
+  bd: '"Kameron", "Noto Serif SC", "Songti SC", serif',
+};
+
+const cqw = (px: number) => `${(px / 1968 * 100).toFixed(3)}cqw`;
+const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
+---
+
+<Layout
+  title="柠檬茶 IP 设计 — Diaz Lee"
+  currentProject="lemon-tea-ip"
+  bgImage="/lt-bg.png"
+  highlightColor="#0049E5"
+  bgOverlay={0.25}
+>
+  <style>
+    .lt-first {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      container-type: inline-size;
+    }
+    .lt-first > * { position: absolute; white-space: pre-wrap; }
+
+    .lt-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1968 / 20090;
+      container-type: inline-size;
+    }
+    .lt-stage > * { position: absolute; white-space: pre-wrap; }
+    .lt-stage img {
+      object-fit: cover;
+      display: block;
+      border-radius: 3.049cqw; /* Figma 60px / 1968 设计宽 */
+      cursor: zoom-in;
+    }
+    .lt-stage img.flat { border-radius: 0; }
+    .lt-spacer { height: 50vh; }
+
+    /* 滚动到视口时,元素从下淡入 */
+    .lt-stage > * {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      will-change: opacity, transform;
+    }
+    .lt-stage > .is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lt-stage > * { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
+
+  <!-- 首屏 -->
+  <section class="lt-first">
+    {firstScreenItems.map((it) => {
+      const style = [
+        `left: ${cqw(it.x)}`,
+        `top: ${vh(it.y)}`,
+        `width: ${cqw(it.w)}`,
+        `font-family: ${fontMap[it.font]}`,
+        `font-weight: 700`,
+        `font-size: ${cqw(it.fs)}`,
+        `color: ${it.color}`,
+        `text-align: ${it.align}`,
+        `line-height: ${it.lh}`,
+      ].join('; ');
+      return <div style={style}>{it.text}</div>;
+    })}
+  </section>
+
+  <!-- 后续 stage -->
+  <section class="lt-stage">
+    {stageItems.map((it) => {
+      if (it.type === 'img') {
+        const yInStage = it.y - STAGE_OFFSET;
+        return (
+          <img
+            src={it.src}
+            alt=""
+            class={it.flat ? 'flat' : ''}
+            style={`left: ${cqw(it.x)}; top: ${cqw(yInStage)}; width: ${cqw(it.w)}; height: ${cqw(it.h!)};`}
+          />
+        );
+      }
+      const yInStage = (it.y as number) - STAGE_OFFSET;
+      const style = [
+        `left: ${cqw(it.x)}`,
+        `top: ${cqw(yInStage)}`,
+        `width: ${cqw(it.w!)}`,
+        `font-family: ${fontMap[it.font!]}`,
+        `font-weight: 700`,
+        `font-size: ${cqw(it.fs!)}`,
+        `color: ${it.color}`,
+        `text-align: ${it.align}`,
+        `line-height: ${it.lh}`,
+      ].join('; ');
+      return <div style={style}>{it.text}</div>;
+    })}
+  </section>
+
+  <!-- 让结语能滚到屏幕中间 -->
+  <div class="lt-spacer"></div>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      const targets = document.querySelectorAll('.lt-stage > *');
+      if (!('IntersectionObserver' in window)) {
+        targets.forEach((el) => el.classList.add('is-visible'));
+        return;
+      }
+      const io = new IntersectionObserver((entries, obs) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-visible');
+            obs.unobserve(e.target);
+          }
+        }
+      }, { rootMargin: '0px 0px -8% 0px' });
+      targets.forEach((el) => io.observe(el));
+    });
+  </script>
+</Layout>

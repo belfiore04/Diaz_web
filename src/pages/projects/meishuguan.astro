@@ -1,0 +1,148 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// 设计稿 (Figma MSG滚动内容页 → 内容 frame): 1968 wide × 12719 tall
+// Frame 起点 (6219, 7600). 所有坐标已转为 frame-relative.
+// 首屏 = y 0~1440, 后续 stage = y 1440~12719
+
+// ===== 首屏 =====
+const firstScreenItems = [
+  { x: 453,  y: 776,  w: 1212, fs: 48, color: '#0051FF', font: 'zh', align: 'left',  lh: 1,   text: '美「书」馆' },
+  { x: 452,  y: 1058, w: 266,  fs: 48, color: '#000',    font: 'en', align: 'right', lh: 1,   text: ' Belles - Lettres' },
+  { x: 1220, y: 1183, w: 445,  fs: 20, color: '#000',    font: 'bd', align: 'right', lh: 1.2, text: '  2026 · Personal Project (in development)\n  SwiftUI · iOS ·  Claude Code · [DeepSeek API]\n github.com/belfiore04/meishuguaan' },
+];
+
+const STAGE_HEIGHT = 11279; // 12719 - 1440
+const STAGE_OFFSET = 1440;
+
+// ===== 后续 stage (4 章 + 结语) =====
+const stageItems = [
+  // -------- 第 I 章 · 天堂 (Borges) --------
+  { x: 278,  y: 1440, w: 81,   fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: '1.' },
+  { x: 278,  y: 1508, w: 584,  fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: ' "I have always imagined that\nParadise will be a kind of library."\n— Jorge Luis Borges' },
+  { x: 1326, y: 1698, w: 416,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '灵感来源于一次读杂志的经历\n\n  那天我读到「达达主义」\n想更深入地了解一下\n\n  我想问 AI\n  AI 给了我一篇长长的科普\n\n \n  但\n我想要的不是那个' },
+  { x: 452,  y: 2162, w: 768,  fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: '我想要的是一个坐在对面、和我一起看同一本书的朋友\n我可以随时跟ta聊聊我的想法、我的思考\n\n然后继续好好看书。' },
+  { x: 852,  y: 2360, w: 656,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '所以做了美「书」馆\n  它不是工具\n\n  是一座私人的、关于阅读这件事的小型美术馆' },
+  { type: 'img', src: '/msg-work1.jpg', x: 254,  y: 2583, w: 660, h: 1348 },
+  { x: 1054, y: 2728, w: 538,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '打开 app\n拍下你手边那本书的封面\n  一位书友会出现,安静地陪你聊这本书\n\n  ta读过\n你说什么,ta答什么\n\n  ta懂你' },
+  { type: 'img', src: '/msg-d1.jpg',    x: 1054, y: 3164, w: 660, h: 1341 },
+  { x: 386,  y: 4083, w: 496,  fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: ' 聊够了,你想结束\n\n  这次对话会被自动整理成一段笔记\n  再为这本书塑一件展品\n\n 每一件都是这次阅读独有的物件' },
+  { type: 'img', src: '/msg-d2.jpg',    x: 254,  y: 4462, w: 660, h: 1341 },
+  { x: 1128, y: 4637, w: 512,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '这件展品进入你的「小型展厅」\n每读一本书,多一件\n\n慢慢攒成一座只属于你的美「书」馆\n\n关于「你读过什么」\n关于「你如何思考」' },
+  { type: 'img', src: '/msg-work2.jpg', x: 1054, y: 5035, w: 660, h: 1349 },
+
+  // -------- 第 II 章 · 做点什么 (木心) --------
+  { x: 1613, y: 6644, w: 52,   fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '2.' },
+  { x: 941,  y: 6712, w: 724,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: ' "凡是真正的读者,他必有一种心情:\n为已逝的、远方的或异邦的作者,\n做一点什么。"\n \n— 木 心' },
+  { x: 206,  y: 6948, w: 576,  fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: 'AI可以不替你"做一点什么"\n\nAI 可以陪你坐在那本书的旁边\n\n\n等你读到某一句、忽然想说点什么的时候\n\nta在场' },
+  { x: 1092, y: 7298, w: 768,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '你说什么,ta接什么\n偶尔,与你探讨ta感兴趣的部分\n像一个有自己好奇心的朋友,但不强加\n不科普、不教你怎么读、不打断你正在享受的阅读心流' },
+  { type: 'img', src: '/msg-shortr.jpg', x: 259, y: 7364, w: 660, h: 1341 },
+  { x: 984,  y: 7890, w: 680,  fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: '"AI 应该多说" 是流量产品的本能\n"AI 应该少说" 是伴读产品的修养' },
+  { x: 984,  y: 8553, w: 416,  fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: '这些克制不是因为技术做不到\n\n而是提示词工程\n主动让它做不到' },
+
+  // -------- 第 III 章 · 私人空间 (Woolf) --------
+  { x: 181,  y: 8965, w: 30,   fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: '3.' },
+  { x: 178,  y: 9033, w: 742,  fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: '"A woman must have money\nand a room of her own\n\n                  if she is to write fiction."\n                                        — Virginia Woolf' },
+  { x: 920,  y: 9261, w: 742,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '美书馆是 iOS app\n不是网页,不是跨平台,不是社交\n\n  理由很简单:读书是一件私人的事' },
+  { x: 118,  y: 9498, w: 742,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '没有点赞,没有评论\n没有"今日阅读排行榜"\n\n你的展厅只属于你\n\n当然美好的阅读体验值得被分享' },
+  { type: 'img', src: '/msg-share.jpg', x: 1002, y: 9498, w: 660, h: 1173 },
+  { x: 118,  y: 9895, w: 742,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '你的美「书」馆想邀请谁来参观\n完全取决于你\n\n只想展示一件展品\n或者一个展厅\n或是整个展馆\n\n我懂你的分享欲\n更懂你隐私的重要' },
+  { x: 118,  y: 10367, w: 742, fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '分享时,会自动为你生成一张卡片\n\n就像展览邀请函\n\n  要不要寄出去\n寄给谁\n\n你说了算' },
+
+  // -------- 第 IV 章 · 慢慢来 (Kafka) --------
+  { x: 1681, y: 10931, w: 52,  fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '4.' },
+  { x: 985,  y: 11009, w: 748, fs: 32, color: '#000', font: 'bd', align: 'right', lh: 1.2, text: '"There is a goal\nbut no way\n\nwhat we call a way is hesitation."\n— Franz Kafka' },
+  { x: 199,  y: 11272, w: 425, fs: 32, color: '#000', font: 'bd', align: 'left',  lh: 1.2, text: '美书馆现在是 prototype\n骨架已经在 GitHub 上\n\n不急着上线\n\n让我和"那位朋友"再熟悉熟悉' },
+
+  // -------- 结语 --------
+  { x: 0,    y: 11796, w: 1968, fs: 32, color: '#000', font: 'bd', align: 'center', lh: 1.6, text: '读书是一件私人的事\n\n  你大可独自享受阅读的乐趣,不必每次阅读都打开美书馆\n\n\n  但当你想有个人坐在你对面\n  或者只是想记录这次阅读的感受\n\n  又或者想把这一次阅读具像化为一个小物件的时候\n\nta在场\n\n\n\n工具不重要,在场很重要' },
+];
+
+const fontMap: Record<string, string> = {
+  zh: '"Assistant", "Noto Serif SC", "Songti SC", serif',
+  en: '"Bebas Neue", sans-serif',
+  bd: '"Kameron", "Noto Serif SC", "Songti SC", serif',
+};
+
+const cqw = (px: number) => `${(px / 1968 * 100).toFixed(3)}cqw`;
+const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
+---
+
+<Layout
+  title="美「书」馆 — Diaz Lee"
+  currentProject="meishuguan"
+  bgImage="/msg-bg.png"
+  highlightColor="#FF0000"
+  bgOverlay={0.15}
+>
+  <style>
+    .msg-first {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      container-type: inline-size;
+    }
+    .msg-first > * { position: absolute; white-space: pre-wrap; }
+
+    .msg-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1968 / 11279;
+      container-type: inline-size;
+    }
+    .msg-stage > * { position: absolute; white-space: pre-wrap; }
+    .msg-stage img {
+      object-fit: cover;
+      display: block;
+      border-radius: 3.049cqw; /* Figma 60px / 1968 设计宽 */
+      cursor: zoom-in;
+    }
+  </style>
+
+  <!-- 首屏 -->
+  <section class="msg-first">
+    {firstScreenItems.map((it) => {
+      const style = [
+        `left: ${cqw(it.x)}`,
+        `top: ${vh(it.y)}`,
+        `width: ${cqw(it.w)}`,
+        `font-family: ${fontMap[it.font]}`,
+        `font-weight: 900`,
+        `font-size: ${cqw(it.fs)}`,
+        `color: ${it.color}`,
+        `text-align: ${it.align}`,
+        `line-height: ${it.lh}`,
+      ].join('; ');
+      return <div style={style}>{it.text}</div>;
+    })}
+  </section>
+
+  <!-- 后续 stage -->
+  <section class="msg-stage">
+    {stageItems.map((it) => {
+      if (it.type === 'img') {
+        const yInStage = it.y - STAGE_OFFSET;
+        return (
+          <img
+            src={it.src}
+            alt=""
+            style={`left: ${cqw(it.x)}; top: ${cqw(yInStage)}; width: ${cqw(it.w)}; height: ${cqw(it.h!)};`}
+          />
+        );
+      }
+      const yInStage = (it.y as number) - STAGE_OFFSET;
+      const style = [
+        `left: ${cqw(it.x)}`,
+        `top: ${cqw(yInStage)}`,
+        `width: ${cqw(it.w!)}`,
+        `font-family: ${fontMap[it.font!]}`,
+        `font-weight: 900`,
+        `font-size: ${cqw(it.fs!)}`,
+        `color: ${it.color}`,
+        `text-align: ${it.align}`,
+        `line-height: ${it.lh}`,
+      ].join('; ');
+      return <div style={style}>{it.text}</div>;
+    })}
+  </section>
+</Layout>

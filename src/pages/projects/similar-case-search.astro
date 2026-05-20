@@ -1,0 +1,142 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// 设计稿(Figma CS页面 → 内容 frame): 1968 wide × 6221 tall
+// 首屏 = y 0~1440 (含标题/英文/元数据), 后续 = y 1440~6221 (why/what/note + 4 截图)
+
+// ===== 首屏: 100vh 锁定, 元素横向用 cqw(基于 main 宽), 纵向用 vh(基于 1440 比例) =====
+const firstScreenItems = [
+  { x: 453,  y: 776,  w: 1212, fs: 48, color: '#FF0000', font: 'zh', align: 'right', lh: 1,   text: '类案检索   与   对比报告生成  系统' },
+  { x: 1040, y: 883,  w: 625,  fs: 48, color: '#fff',    font: 'en', align: 'right', lh: 1,   text: 'Case Retrieval\nand\nComparative Report Generation System' },
+  { x: 1163, y: 1183, w: 502,  fs: 20, color: '#fff',    font: 'mt', align: 'right', lh: 1.2, text: '2025 · Undergraduate Graduation Project\nFastAPI  ·  React  ·  FAISS  ·  DashScope  ·  DeepSeek\ngithub.com/belfiore04/similar_case_search' },
+];
+
+// ===== 后续 stage: aspect-ratio 1968:4781, 元素 y 已减 1440 转到 stage 坐标 =====
+// `alignBottom: <figma_y_of_bottom>` 表示用 CSS bottom 定位,让正文底对齐图片底
+const STAGE_HEIGHT = 4781; // 6221 - 1440
+const STAGE_OFFSET = 1440;
+
+const stageItems = [
+  // Why / What / Note
+  { x: 202,  y: 1440, w: 110,  fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: 'WHY？' },
+  { x: 202,  y: 1558, w: 931,  fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: '律师在准备案件、梳理辩护思路时,需要做大量类案检索。\n现有工具——无讼、北大法宝、Alpha\n\n核心是关键词检索:\n律师必须先知道"我要搜什么"才能搜。\n\n但很多时候,律师自己也说不清,"相似"是哪几个维度的相似。' },
+
+  { x: 1548, y: 1907, w: 117,  fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: 'What？' },
+  { x: 734,  y: 2025, w: 931,  fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1, text: '  类案检索让律师直接用一段自然语言案情\n系统通过结构化抽取 + 多路切分检索 + 引用追溯\n\n替律师找出事实模式、法律关系、争议焦点都接近的过往判例\n\n返回一份带引用的对比分析报告' },
+
+  { x: 202,  y: 2336, w: 229,  fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: 'A note on RAG' },
+  { x: 199,  y: 2454, w: 931,  fs: 32, color: '#fff', font: 'bd', align: 'left',  lh: 1, text: '做这个项目我想清楚的一件事是:RAG 不是"加个向量库就行"\n\n真正决定 RAG 好不好用的,\n是结构化前置、引用追溯、和 Prompt 工程\n\n向量检索本身,反而是最 commodity 的一环。' },
+
+  // 截图 1: 查询页 (截图在左) — 图片底部 y=3018+602=3620
+  { type: 'img', src: '/sc-1-query.png', x: 199,  y: 3018, w: 960, h: 602 },
+  { x: 1200, y: 3018, w: 246, fs: 32, color: '#fff', font: 'bd', align: 'left', lh: 1, text: '查询页' },
+  { x: 1200, w: 764, fs: 32, color: '#fff', font: 'bd', align: 'left', lh: 1.4, alignBottom: 3620, text: '传统法律检索工具要求律师先想好关键词\n但很多时候律师自己也说不清"相似"是哪几个维度。\n\n我把入口设计成纯自然语言输入\n\n把案情扔进去就好\n\n系统去理解、拆解、检索。\n降低门槛的同时,反而提升了检索精度。' },
+
+  // 截图 2: 查询结果 (截图在右) — 图片底部 y=3820+602=4422
+  { type: 'img', src: '/sc-2-result.png', x: 966, y: 3820, w: 960, h: 602 },
+  { x: 727,  y: 3820, w: 198, fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1, text: '查询结果' },
+  { x: 161,  w: 764, fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1.4, alignBottom: 4422, text: '每个候选案例除了案名和相似度\n还展示了关键事实与争议焦点\n\n帮律师不打开详情就能快速判断哪些值得深看\n\n这里我主动做了取舍:不展示完整判决摘要\n\n因为在专业工具里\n信息过载比信息不足更影响判断' },
+
+  // 截图 3: 报告生成 (截图在左) — 图片底部 y=4622+602=5224
+  { type: 'img', src: '/sc-3-report.png', x: 199, y: 4622, w: 960, h: 602 },
+  { x: 1200, y: 4622, w: 246, fs: 32, color: '#fff', font: 'bd', align: 'left', lh: 1, text: '报告生成页' },
+  { x: 1200, w: 764, fs: 32, color: '#fff', font: 'bd', align: 'left', lh: 1.4, alignBottom: 5224, text: '这是用户最关心的一屏\n\n报告我没用大段叙述\n而是结构化的事实表格做对比\n\n同一行可以横向扫"原案 vs 候选案"\n在某个事实点上的异同\n\n这是个有意识的取舍:\n\n把 AI 的"创作自由"换成"对比的可读性"\n在专业场景下,这是更稳的产品形态' },
+
+  // 截图 4: 法律条文 (截图在右) — 图片底部 y=5424+602=6026
+  { type: 'img', src: '/sc-4-law.png', x: 966, y: 5424, w: 960, h: 602 },
+  { x: 727,  y: 5424, w: 198, fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1, text: '相关法律条文' },
+  { x: 161,  w: 764, fs: 32, color: '#fff', font: 'bd', align: 'right', lh: 1.4, alignBottom: 6026, text: '类案检索本身只走了一半\n\n律师拿到"类似案件"之后\n真正需要的是\n"这些案件具体引用了哪些法条、怎么应用的"\n\n所以我把法条应用从对比报告里独立出来\n律师可以反向以法条为锚\n看哪些类案在用同一个法条\n\n这是写诉状时最需要的检索维度\n而不是停在"找到类似案件"这个 70 分的位置' },
+];
+
+const fontMap: Record<string, string> = {
+  zh: '"Assistant", "Noto Serif SC", "Songti SC", serif',
+  en: '"Bebas Neue", sans-serif',
+  mt: '"Kameron", "Noto Serif SC", serif',
+  bd: '"Kameron", "Noto Serif SC", "Songti SC", serif',
+};
+
+const cqw = (px: number) => `${(px / 1968 * 100).toFixed(3)}cqw`;
+const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
+---
+
+<Layout title="类案检索 — Diaz Lee" currentProject="similar-case-search">
+  <style>
+    /* 首屏: 锁定 100vh, 横向 cqw, 纵向 vh */
+    .scs-first {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      container-type: inline-size;
+    }
+    .scs-first > * { position: absolute; white-space: pre-line; }
+
+    /* 后续 stage: aspect-ratio 锁定 1968:4781, 全部 cqw */
+    .scs-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1968 / 4781;
+      container-type: inline-size;
+    }
+    .scs-stage > * { position: absolute; white-space: pre-line; }
+    .scs-stage img {
+      object-fit: cover;
+      display: block;
+      border-radius: 3.049cqw; /* Figma 60px / 1968 设计宽 */
+      cursor: zoom-in;
+    }
+  </style>
+
+  <!-- 首屏 -->
+  <section class="scs-first">
+    {firstScreenItems.map((it) => {
+      const shadow = it.color === '#FF0000' ? 'none' : '0 2px 8px rgba(0,0,0,0.14)';
+      const style = [
+        `left: ${cqw(it.x)}`,
+        `top: ${vh(it.y)}`,                 // 纵向锁 1440 比例
+        `width: ${cqw(it.w)}`,
+        `font-family: ${fontMap[it.font]}`,
+        `font-weight: 700`,
+        `font-size: ${cqw(it.fs)}`,
+        `color: ${it.color}`,
+        `text-align: ${it.align}`,
+        `line-height: ${it.lh}`,
+        `text-shadow: ${shadow}`,
+      ].join('; ');
+      return <div style={style}>{it.text}</div>;
+    })}
+  </section>
+
+  <!-- 后续 stage -->
+  <section class="scs-stage">
+    {stageItems.map((it) => {
+      if (it.type === 'img') {
+        const yInStage = it.y - STAGE_OFFSET;
+        return (
+          <img
+            src={it.src}
+            alt=""
+            style={`left: ${cqw(it.x)}; top: ${cqw(yInStage)}; width: ${cqw(it.w)}; height: ${cqw(it.h!)};`}
+          />
+        );
+      }
+      const useBottom = it.alignBottom !== undefined;
+      const positionStyle = useBottom
+        ? `bottom: ${cqw(STAGE_HEIGHT - (it.alignBottom! - STAGE_OFFSET))}`
+        : `top: ${cqw((it.y as number) - STAGE_OFFSET)}`;
+      const shadow = it.color === '#FF0000' ? 'none' : '0 2px 8px rgba(0,0,0,0.14)';
+      const style = [
+        `left: ${cqw(it.x)}`,
+        positionStyle,
+        `width: ${cqw(it.w!)}`,
+        `font-family: ${fontMap[it.font!]}`,
+        `font-weight: 700`,
+        `font-size: ${cqw(it.fs!)}`,
+        `color: ${it.color}`,
+        `text-align: ${it.align}`,
+        `line-height: ${it.lh}`,
+        `text-shadow: ${shadow}`,
+      ].join('; ');
+      return <div style={style}>{it.text}</div>;
+    })}
+  </section>
+</Layout>
