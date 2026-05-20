@@ -98,10 +98,18 @@ const projects = [
       .site-nav a {
         color: inherit;
         text-decoration: none;
-        transition: color .15s ease;
+        display: inline-block;
+        transform-origin: left center;
+        transition: color .15s ease, transform .15s ease;
       }
-      .site-nav a:hover { color: var(--highlightColor); }
+      .site-nav a:hover {
+        color: var(--highlightColor);
+        transform: scale(1.04);
+      }
       .site-nav .logo { color: var(--logoColor); }
+      @media (prefers-reduced-motion: reduce) {
+        .site-nav a:hover { transform: none; }
+      }
       .nav-name-zh {
         font-family: 'Assistant', 'Noto Serif SC', serif;
         white-space: pre;
