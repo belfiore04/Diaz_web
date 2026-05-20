@@ -9,6 +9,7 @@ interface Props {
   highlightColor?: string;
   bgOverlay?: number; // 0~1, 背景图上的黑色遮罩透明度
   navColor?: string;
+  logoColor?: string; // 不传则跟 navColor 一致
 }
 
 const {
@@ -19,7 +20,10 @@ const {
   highlightColor = '#0051FF',
   bgOverlay = 0,
   navColor = '#fff',
+  logoColor,
 } = Astro.props;
+
+const resolvedLogoColor = logoColor ?? navColor;
 
 const projects = [
   { slug: 'similar-case-search', title: '类案检索\n与对比报告生成系统' },
@@ -43,7 +47,7 @@ const projects = [
     />
     <meta name="description" content={description} />
     <title>{title}</title>
-    <style is:global define:vars={{ bgImage: `url('${bgImage}')`, highlightColor, bgOverlayAlpha: String(bgOverlay), navColor }}>
+    <style is:global define:vars={{ bgImage: `url('${bgImage}')`, highlightColor, bgOverlayAlpha: String(bgOverlay), navColor, logoColor: resolvedLogoColor }}>
       :root {
         --nav-left: 1.5vw;
         --nav-width: 17vw;
@@ -93,6 +97,8 @@ const projects = [
       }
       .site-nav a { color: inherit; text-decoration: none; }
       .site-nav a:hover { color: var(--highlightColor); transition: color .15s ease; }
+      .site-nav .logo { color: var(--logoColor); }
+      .site-nav .logo:hover { color: var(--logoColor); }
       .nav-name-zh {
         font-family: 'Assistant', 'Noto Serif SC', serif;
         white-space: pre;
@@ -144,7 +150,7 @@ const projects = [
     {bgOverlay > 0 && <div class="bg-overlay"></div>}
 
     <nav class="site-nav">
-      <a href="/">
+      <a href="/" class="logo">
         <div>Diaz Lee</div>
         <div class="nav-name-zh">李      多迪</div>
       </a>

@@ -2,27 +2,33 @@
 import Layout from '../layouts/Layout.astro';
 
 // 设计稿 (Figma 主页不滚动内容页 132:264): 1968 wide × 1440 tall, 一屏不滚动
+// 中文名 Assistant Bold, 英文名 + hero + 联系方式 都用 Kameron Bold
 const firstScreenItems = [
-  { x: 508,  y: 439,  w: 1212, fs: 128, color: '#fff', font: 'zh', align: 'right',  lh: 1,   text: '李        多  迪' },
-  { x: 1243, y: 744,  w: 477,  fs: 96,  color: '#fff', font: 'en', align: 'right',  lh: 1,   text: 'Diaz    Lee' },
-  { x: 1089, y: 858,  w: 631,  fs: 32,  color: '#fff', font: 'bd', align: 'right',  lh: 1.2, text: '产品                by AI, for humans, with care\n\n喜欢文字\n\n喜欢影像\n\n喜欢音乐\n\n喜欢艺术\n\n喜欢水' },
-  { x: 499,  y: 1315, w: 969,  fs: 32,  color: '#fff', font: 'bd', align: 'center', lh: 1.2, text: 'Email : diaz120404@163.com      ·      Tel : (+86) 159 0403 5157\nGitHub : github.com/belfiore04     ·     Wechat : DDDDDiaz' },
+  { x: 508,  y: 439, w: 1212, fs: 128, color: '#fff', font: 'zh', align: 'right',  lh: 1,   text: '李        多  迪' },
+  { x: 1243, y: 744, w: 477,  fs: 96,  color: '#fff', font: 'bd', align: 'right',  lh: 1,   text: 'Diaz    Lee' },
+  { x: 1089, y: 858, w: 631,  fs: 32,  color: '#fff', font: 'bd', align: 'right',  lh: 1.2, text: '产品                by AI, for humans, with care\n\n喜欢文字\n\n喜欢影像\n\n喜欢音乐\n\n喜欢艺术\n\n喜欢水' },
 ];
+
+// 联系方式 — 跨越整 viewport 居中 (不在 site-main 内居中)
+const contactText = 'Email : diaz120404@163.com      ·      Tel : (+86) 159 0403 5157\nGitHub : github.com/belfiore04     ·     Wechat : DDDDDiaz';
 
 const fontMap: Record<string, string> = {
   zh: '"Assistant", "Noto Serif SC", "Songti SC", serif',
-  en: '"Bebas Neue", sans-serif',
   bd: '"Kameron", "Noto Serif SC", "Songti SC", serif',
 };
 
 const cqw = (px: number) => `${(px / 1968 * 100).toFixed(3)}cqw`;
 const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
+// 联系方式跨 100vw,字号按 Figma 整页 2560 宽计算 → vw
+const vw  = (px: number) => `${(px / 2560 * 100).toFixed(3)}vw`;
 ---
 
 <Layout
   title="李多迪 — Diaz Lee"
   bgImage="/MAIN.png"
   navColor="#fff"
+  logoColor="#FF0000"
+  highlightColor="#FF0000"
 >
   <style>
     .main-first {
@@ -32,6 +38,19 @@ const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
       container-type: inline-size;
     }
     .main-first > * { position: absolute; white-space: pre-wrap; }
+
+    .main-contact {
+      position: fixed;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #fff;
+      font-weight: 700;
+      white-space: pre-wrap;
+      line-height: 1.2;
+      z-index: 2;
+      pointer-events: none;
+    }
   </style>
 
   <section class="main-first">
@@ -50,4 +69,9 @@ const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
       return <div style={style}>{it.text}</div>;
     })}
   </section>
+
+  <div
+    class="main-contact"
+    style={`top: ${vh(1315)}; font-family: ${fontMap.bd}; font-size: ${vw(32)};`}
+  >{contactText}</div>
 </Layout>
