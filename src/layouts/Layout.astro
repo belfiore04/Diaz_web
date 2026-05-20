@@ -8,6 +8,7 @@ interface Props {
   bgImage?: string;
   highlightColor?: string;
   bgOverlay?: number; // 0~1, 背景图上的黑色遮罩透明度
+  navColor?: string;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
   bgImage = '/SC.png',
   highlightColor = '#0051FF',
   bgOverlay = 0,
+  navColor = '#fff',
 } = Astro.props;
 
 const projects = [
@@ -41,7 +43,7 @@ const projects = [
     />
     <meta name="description" content={description} />
     <title>{title}</title>
-    <style is:global define:vars={{ bgImage: `url('${bgImage}')`, highlightColor, bgOverlayAlpha: String(bgOverlay) }}>
+    <style is:global define:vars={{ bgImage: `url('${bgImage}')`, highlightColor, bgOverlayAlpha: String(bgOverlay), navColor }}>
       :root {
         --nav-left: 1.5vw;
         --nav-width: 17vw;
@@ -84,7 +86,7 @@ const projects = [
         font-family: 'Kameron', 'Noto Serif SC', serif;
         font-weight: 700;
         font-size: var(--nav-font);
-        color: #fff;
+        color: var(--navColor);
         z-index: 50;
         line-height: 1.18;
         background: transparent;
