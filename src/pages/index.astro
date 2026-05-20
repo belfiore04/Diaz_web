@@ -1,23 +1,53 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+// 设计稿 (Figma 主页不滚动内容页 132:264): 1968 wide × 1440 tall, 一屏不滚动
+const firstScreenItems = [
+  { x: 508,  y: 439,  w: 1212, fs: 128, color: '#fff', font: 'zh', align: 'right',  lh: 1,   text: '李        多  迪' },
+  { x: 1243, y: 744,  w: 477,  fs: 96,  color: '#fff', font: 'en', align: 'right',  lh: 1,   text: 'Diaz    Lee' },
+  { x: 1089, y: 858,  w: 631,  fs: 32,  color: '#fff', font: 'bd', align: 'right',  lh: 1.2, text: '产品                by AI, for humans, with care\n\n喜欢文字\n\n喜欢影像\n\n喜欢音乐\n\n喜欢艺术\n\n喜欢水' },
+  { x: 499,  y: 1315, w: 969,  fs: 32,  color: '#fff', font: 'bd', align: 'center', lh: 1.2, text: 'Email : diaz120404@163.com      ·      Tel : (+86) 159 0403 5157\nGitHub : github.com/belfiore04     ·     Wechat : DDDDDiaz' },
+];
+
+const fontMap: Record<string, string> = {
+  zh: '"Assistant", "Noto Serif SC", "Songti SC", serif',
+  en: '"Bebas Neue", sans-serif',
+  bd: '"Kameron", "Noto Serif SC", "Songti SC", serif',
+};
+
+const cqw = (px: number) => `${(px / 1968 * 100).toFixed(3)}cqw`;
+const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
 ---
 
-<Layout title="李多迪 — Diaz Lee">
-  <section class="min-h-screen flex items-center justify-center px-16 bg-ink">
-    <div class="text-center max-w-3xl">
-      <p class="font-serif italic text-muted text-sm tracking-[0.3em] uppercase mb-8">Diaz Lee · 李多迪</p>
-      <h1 class="font-cn text-paper text-7xl leading-tight mb-12">
-        作品集主页
-      </h1>
-      <p class="font-cn text-muted text-lg leading-relaxed">
-        这是主页占位——下一步从左侧导航进入任意项目页。
-      </p>
-      <div class="mt-16 flex justify-center gap-8 text-paper/60 text-xs font-serif italic tracking-widest uppercase">
-        <a href="/projects/similar-case-search" class="hover:text-crimson">类案检索</a>
-        <a href="/projects/meishuguan" class="hover:text-crimson">美书馆</a>
-        <a href="/projects/forget-me-not" class="hover:text-crimson">Forget Me Not</a>
-        <a href="/projects/lemon-tea-ip" class="hover:text-crimson">柠檬茶 IP</a>
-      </div>
-    </div>
+<Layout
+  title="李多迪 — Diaz Lee"
+  bgImage="/MAIN.png"
+  navColor="#fff"
+>
+  <style>
+    .main-first {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      container-type: inline-size;
+    }
+    .main-first > * { position: absolute; white-space: pre-wrap; }
+  </style>
+
+  <section class="main-first">
+    {firstScreenItems.map((it) => {
+      const style = [
+        `left: ${cqw(it.x)}`,
+        `top: ${vh(it.y)}`,
+        `width: ${cqw(it.w)}`,
+        `font-family: ${fontMap[it.font]}`,
+        `font-weight: 700`,
+        `font-size: ${cqw(it.fs)}`,
+        `color: ${it.color}`,
+        `text-align: ${it.align}`,
+        `line-height: ${it.lh}`,
+      ].join('; ');
+      return <div style={style}>{it.text}</div>;
+    })}
   </section>
 </Layout>
