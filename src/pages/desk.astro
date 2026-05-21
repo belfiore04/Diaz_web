@@ -43,11 +43,9 @@ const total = spreads.length;
       aspect-ratio: 1968 / 1440;
       max-height: 88vh;
       margin: 0;
-      transform: translate(-50%, -50%) rotateY(0deg);
+      transform: translate(-50%, -50%) translateZ(0) rotateY(0deg) rotateZ(0deg);
       transform-origin: 0% 50%;
       transform-style: preserve-3d;
-      transition: transform 0.95s cubic-bezier(.45, .0, .2, 1),
-                  box-shadow 0.95s ease;
       backface-visibility: hidden;
       background: #FAFAFA;
       background-repeat: no-repeat;
@@ -63,10 +61,47 @@ const total = spreads.length;
     .paper[data-i="1"] { z-index: 20; }
     .paper[data-i="2"] { z-index: 10; }
 
-    /* 翻过的页:rotateY -180° */
+    /* 翻过的页:rotateY -180° 静止终态 */
     .paper[data-flipped="true"] {
-      transform: translate(-50%, -50%) rotateY(-180deg);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+      transform: translate(-50%, -50%) translateZ(0) rotateY(-180deg) rotateZ(0deg);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+    }
+
+    /* 翻出去:三段式 — 抬起 80px,中间 90° 微歪 rotateZ,阴影涨到最大 */
+    @keyframes paper-flip-out {
+      0% {
+        transform: translate(-50%, -50%) translateZ(0) rotateY(0deg) rotateZ(0deg);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
+      }
+      45% {
+        transform: translate(-50%, -50%) translateZ(70px) rotateY(-78deg) rotateZ(-1.2deg);
+        box-shadow: -50px 50px 120px rgba(0, 0, 0, 0.55), -10px 20px 30px rgba(0, 0, 0, 0.25);
+      }
+      100% {
+        transform: translate(-50%, -50%) translateZ(0) rotateY(-180deg) rotateZ(0deg);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+      }
+    }
+    /* 翻回来:反向同款节奏 */
+    @keyframes paper-flip-in {
+      0% {
+        transform: translate(-50%, -50%) translateZ(0) rotateY(-180deg) rotateZ(0deg);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+      }
+      55% {
+        transform: translate(-50%, -50%) translateZ(70px) rotateY(-102deg) rotateZ(-1.2deg);
+        box-shadow: -50px 50px 120px rgba(0, 0, 0, 0.55), -10px 20px 30px rgba(0, 0, 0, 0.25);
+      }
+      100% {
+        transform: translate(-50%, -50%) translateZ(0) rotateY(0deg) rotateZ(0deg);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
+      }
+    }
+    .paper.is-flipping-out {
+      animation: paper-flip-out 1.15s cubic-bezier(0.45, 0, 0.25, 1) forwards;
+    }
+    .paper.is-flipping-in {
+      animation: paper-flip-in 1.15s cubic-bezier(0.45, 0, 0.25, 1) forwards;
     }
 
     /* 左右点击区域,占整 viewport 各一半 */
@@ -141,10 +176,24 @@ const total = spreads.length;
       const hashIdx = parseInt((location.hash || '').replace('#', ''), 10);
       let cur = Number.isFinite(hashIdx) ? Math.max(0, Math.min(total - 1, hashIdx)) : 0;
 
-      function render() {
+      function render(animate) {
         papers.forEach((p, i) => {
-          // cur 之前(<cur)的页都翻过去,cur 及以后(>=cur)的页平躺
-          p.dataset.flipped = i < cur ? 'true' : 'false';
+          const willFlip = i < cur;
+          const wasFlipped = p.dataset.flipped === 'true';
+          if (animate && willFlip !== wasFlipped) {
+            // 状态变了:跑 keyframe 动画,动画结束再落到终态
+            p.classList.remove('is-flipping-out', 'is-flipping-in');
+            void p.offsetWidth; // 强制 reflow 让 animation 能重跑
+            p.classList.add(willFlip ? 'is-flipping-out' : 'is-flipping-in');
+            const onEnd = () => {
+              p.classList.remove('is-flipping-out', 'is-flipping-in');
+              p.dataset.flipped = willFlip ? 'true' : 'false';
+              p.removeEventListener('animationend', onEnd);
+            };
+            p.addEventListener('animationend', onEnd);
+          } else if (!animate) {
+            p.dataset.flipped = willFlip ? 'true' : 'false';
+          }
         });
         pager.textContent = `${cur + 1} / ${total}`;
         prev.disabled = cur === 0;
@@ -156,7 +205,7 @@ const total = spreads.length;
         const nxt = Math.max(0, Math.min(total - 1, n));
         if (nxt === cur) return;
         cur = nxt;
-        render();
+        render(true);
       }
 
       document.addEventListener('keydown', (e) => {
@@ -177,16 +226,17 @@ const total = spreads.length;
         touchX = null;
       }, { passive: true });
 
-      render();
+      render(false);
       setTimeout(() => hint.classList.add('is-hidden'), 4000);
 
-      // 截图演示用:?flipping=N 让第 N 页停在翻到一半的状态(给静态截图看 3D 效果)
+      // 截图演示用:?flipping=N 让第 N 页停在 keyframe 中段(抬起 70px + 微歪)
       const flipParam = new URLSearchParams(location.search).get('flipping');
       if (flipParam !== null) {
         const idx = Math.max(0, Math.min(total - 1, parseInt(flipParam, 10) || 0));
+        papers[idx].style.animation = 'none';
         papers[idx].style.transition = 'none';
-        papers[idx].style.transform = 'translate(-50%, -50%) rotateY(-55deg)';
-        papers[idx].style.boxShadow = '-30px 24px 80px rgba(0, 0, 0, 0.55)';
+        papers[idx].style.transform = 'translate(-50%, -50%) translateZ(70px) rotateY(-78deg) rotateZ(-1.2deg)';
+        papers[idx].style.boxShadow = '-50px 50px 120px rgba(0, 0, 0, 0.55), -10px 20px 30px rgba(0, 0, 0, 0.25)';
       }
     })();
   </script>
