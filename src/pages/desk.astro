@@ -93,8 +93,24 @@ import Layout from '../layouts/Layout.astro';
     }
     .book-overlay.is-open .book-stage { opacity: 1; transform: scale(1); }
     #book-canvas {
-      /* 让 book-canvas 接收单击放大事件 */
+      /* 鼠标在书上变放大镜:暗示单击放大 */
       cursor: zoom-in;
+    }
+    /* HTML 模式下每页的 DOM 容器 */
+    .bf-page {
+      width: 100%;
+      height: 100%;
+      background: #FAFAFA;
+      overflow: hidden;
+      user-select: none;
+    }
+    .bf-page img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      -webkit-user-drag: none;
     }
 
     /* 顶部右关闭 */
@@ -234,7 +250,7 @@ import Layout from '../layouts/Layout.astro';
 
     <div class="book-pager" id="book-pager">
       <span id="pager-num">1 / 1</span>
-      <span class="hint">← / →  双击放大  ESC 关闭</span>
+      <span class="hint">← / →  单击放大  ESC 关闭</span>
     </div>
   </div>
 
@@ -309,9 +325,27 @@ import Layout from '../layouts/Layout.astro';
       flankNext.disabled = (idx >= pageImages.length - 1);
     }
 
+    // 用 HTML 模式 — canvas 模式翻页时不 clearRect 会有像素残留(两页重叠)
+    // HTML 模式每页是真实 DOM,浏览器原生处理图层,无残留
+    function buildPagesDom() {
+      canvasEl.innerHTML = '';
+      pageImages.forEach((src, i) => {
+        const pg = document.createElement('div');
+        pg.className = 'bf-page';
+        pg.dataset.idx = String(i);
+        const im = document.createElement('img');
+        im.src = src;
+        im.alt = '';
+        im.draggable = false;
+        pg.appendChild(im);
+        canvasEl.appendChild(pg);
+      });
+    }
+
     function initBook() {
       if (pageFlip) return;
       const { width, height } = computeBookSize();
+      buildPagesDom();
       pageFlip = new PageFlip(canvasEl, {
         width,
         height,
@@ -324,7 +358,7 @@ import Layout from '../layouts/Layout.astro';
         swipeDistance: 30,
         startPage: 0,
       });
-      pageFlip.loadFromImages(pageImages);
+      pageFlip.loadFromHTML(canvasEl.querySelectorAll('.bf-page'));
       pageFlip.on('flip', (e) => updatePager(e.data));
       updatePager(0);
     }
@@ -366,6 +400,26 @@ import Layout from '../layouts/Layout.astro';
       else if (e.key === 'ArrowRight') flipNext();
     });
 
+    // 短按放大:capture 阶段拦 mouseup,如果位移小+时间短 → 放大并阻止 PageFlip 的翻页 handler
+    // 拖拽(超过位移阈值)放行给 PageFlip 处理翻页
+    let downX = 0, downY = 0, downT = 0;
+    const CLICK_MOVE_THRESHOLD = 5;
+    const CLICK_TIME_THRESHOLD = 250;
+    canvasEl.addEventListener('mousedown', (e) => {
+      downX = e.clientX; downY = e.clientY; downT = Date.now();
+    }, true);
+    canvasEl.addEventListener('mouseup', (e) => {
+      const dx = Math.abs(e.clientX - downX);
+      const dy = Math.abs(e.clientY - downY);
+      const dt = Date.now() - downT;
+      if (dx < CLICK_MOVE_THRESHOLD && dy < CLICK_MOVE_THRESHOLD && dt < CLICK_TIME_THRESHOLD) {
+        // 短按:阻止 PageFlip 翻页,改成放大
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        openZoom();
+      }
+    }, true); // capture phase 在 PageFlip listener 之前
+
     // 双击 book canvas → 放大当前 spread(左右两页拼一起看)
     function openZoom() {
       // 当前可见 spread 的左右页
@@ -398,7 +452,6 @@ import Layout from '../layouts/Layout.astro';
       zoom.classList.remove('is-open');
       zoom.setAttribute('aria-hidden', 'true');
     }
-    canvasEl.addEventListener('dblclick', openZoom);
     zoom.addEventListener('click', closeZoom);
 
     // 截图调试:?open=1&page=N
@@ -421,6 +474,7 @@ import Layout from '../layouts/Layout.astro';
         try { pageFlip.destroy(); } catch {}
         pageFlip = null;
         const { width, height } = computeBookSize();
+        buildPagesDom();
         pageFlip = new PageFlip(canvasEl, {
           width, height, size: 'fixed',
           showCover: false, flippingTime: 900,
@@ -428,7 +482,7 @@ import Layout from '../layouts/Layout.astro';
           mobileScrollSupport: false, swipeDistance: 30,
           startPage: cur,
         });
-        pageFlip.loadFromImages(pageImages);
+        pageFlip.loadFromHTML(canvasEl.querySelectorAll('.bf-page'));
         pageFlip.on('flip', (e) => updatePager(e.data));
       }, 200);
     });
