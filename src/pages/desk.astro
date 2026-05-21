@@ -1,9 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-// 桌面 · Table — 杂志翻页 demo
-// 三个 spread 横向铺开,carousel 翻页,键盘 ← → / 点击左右 / 页码
-// PNG 是从 figma TB内容Page > {cover, page1-2, page3-4} render @2x 来的
+// 桌面 · Table — 真翻书 demo
+// 每页绕"左边轴" rotateY -180° 翻起,backface-visibility:hidden 让翻过的页自动让位
+// 翻页:键盘 ← → / 点击页面左右半边 / 触屏左右滑
 const spreads = [
   { src: '/desk-cover.png',  label: '封面' },
   { src: '/desk-page12.png', label: '目录' },
@@ -19,51 +19,63 @@ const total = spreads.length;
   logoColor="#E50000"
   highlightColor="#0050FF"
 >
-  <style define:vars={{ totalPct: `${total * 100}%`, slidePct: `${100 / total}%` }}>
+  <style define:vars={{ total: String(total) }}>
     .desk-viewport {
       position: relative;
       width: 100%;
       height: 100vh;
       overflow: hidden;
-      perspective: 2400px;
-      container-type: inline-size;
     }
-    .book-track {
-      display: flex;
-      width: var(--totalPct);
+    /* 翻书舞台 — 3D perspective 容器 */
+    .book-stage {
+      position: relative;
+      width: 100%;
       height: 100%;
-      transition: transform 0.7s cubic-bezier(.5, .0, .2, 1);
-      transform-style: preserve-3d;
+      perspective: 2600px;
+      perspective-origin: 30% 50%;
     }
-    .spread {
-      flex: 0 0 var(--slidePct);
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    /* 每个 spread 内的"纸" — 一张白纸贴在桌上 */
-    .page {
+    /* 每张纸:堆叠在同一位置,以左边为轴翻起 */
+    .paper {
+      position: absolute;
+      left: 50%;
+      top: 50%;
       width: 92%;
       aspect-ratio: 1968 / 1440;
       max-height: 88vh;
+      margin: 0;
+      transform: translate(-50%, -50%) rotateY(0deg);
+      transform-origin: 0% 50%;
+      transform-style: preserve-3d;
+      transition: transform 0.95s cubic-bezier(.45, .0, .2, 1),
+                  box-shadow 0.95s ease;
+      backface-visibility: hidden;
       background: #FAFAFA;
       background-repeat: no-repeat;
-      background-position: center;
       background-size: 100% 100%;
-      box-shadow:
-        0 24px 60px rgba(0, 0, 0, 0.35),
-        0 4px 12px rgba(0, 0, 0, 0.18);
+      background-position: center;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35),
+                  0 4px 12px rgba(0, 0, 0, 0.18);
       border-radius: 2px;
+      will-change: transform, box-shadow;
+    }
+    /* z-index:cover 在最上(data-i=0),后面页层层在下 */
+    .paper[data-i="0"] { z-index: 30; }
+    .paper[data-i="1"] { z-index: 20; }
+    .paper[data-i="2"] { z-index: 10; }
+
+    /* 翻过的页:rotateY -180° */
+    .paper[data-flipped="true"] {
+      transform: translate(-50%, -50%) rotateY(-180deg);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
     }
 
-    /* 左右点击区域,占整 viewport 各一半,透明 */
+    /* 左右点击区域,占整 viewport 各一半 */
     .click-prev, .click-next {
       position: absolute;
       top: 0;
       height: 100%;
       width: 50%;
-      z-index: 5;
+      z-index: 50;
       background: transparent;
       border: 0;
       padding: 0;
@@ -78,7 +90,7 @@ const total = spreads.length;
       position: absolute;
       bottom: 3.5vh;
       right: 2.5vw;
-      z-index: 10;
+      z-index: 60;
       color: #fff;
       font-family: 'Kameron', serif;
       font-weight: 700;
@@ -88,13 +100,12 @@ const total = spreads.length;
       user-select: none;
       pointer-events: none;
     }
-    /* 翻页提示,首次进入显示 */
     .hint {
       position: absolute;
       bottom: 3.5vh;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 10;
+      z-index: 60;
       color: rgba(255, 255, 255, 0.85);
       font-family: 'Kameron', serif;
       font-size: clamp(11px, 0.9vw, 16px);
@@ -107,12 +118,10 @@ const total = spreads.length;
     .hint.is-hidden { opacity: 0; }
   </style>
 
-  <section class="desk-viewport" id="desk-viewport">
-    <div class="book-track" id="book-track">
+  <section class="desk-viewport">
+    <div class="book-stage" id="book-stage">
       {spreads.map((s, i) => (
-        <div class="spread" data-i={i}>
-          <div class="page" style={`background-image: url('${s.src}')`}></div>
-        </div>
+        <div class="paper" data-i={i} style={`background-image: url('${s.src}')`}></div>
       ))}
     </div>
     <button class="click-prev" aria-label="上一页" id="btn-prev"></button>
@@ -123,42 +132,40 @@ const total = spreads.length;
 
   <script is:inline define:vars={{ total }}>
     (() => {
-      const track = document.getElementById('book-track');
+      const papers = document.querySelectorAll('.paper');
       const pager = document.getElementById('pager');
       const hint = document.getElementById('hint');
       const prev = document.getElementById('btn-prev');
       const next = document.getElementById('btn-next');
 
       const hashIdx = parseInt((location.hash || '').replace('#', ''), 10);
-      let i = Number.isFinite(hashIdx) ? Math.max(0, Math.min(total - 1, hashIdx)) : 0;
-      let hintShown = false;
-
-      const slidePct = 100 / total;
+      let cur = Number.isFinite(hashIdx) ? Math.max(0, Math.min(total - 1, hashIdx)) : 0;
 
       function render() {
-        track.style.transform = `translateX(-${i * slidePct}%)`;
-        pager.textContent = `${i + 1} / ${total}`;
-        prev.disabled = i === 0;
-        next.disabled = i === total - 1;
-        history.replaceState(null, '', '#' + i);
-        if (hintShown) hint.classList.add('is-hidden');
-        hintShown = true;
+        papers.forEach((p, i) => {
+          // cur 之前(<cur)的页都翻过去,cur 及以后(>=cur)的页平躺
+          p.dataset.flipped = i < cur ? 'true' : 'false';
+        });
+        pager.textContent = `${cur + 1} / ${total}`;
+        prev.disabled = cur === 0;
+        next.disabled = cur === total - 1;
+        history.replaceState(null, '', '#' + cur);
       }
 
       function goto(n) {
-        const next = Math.max(0, Math.min(total - 1, n));
-        if (next === i) return;
-        i = next;
+        const nxt = Math.max(0, Math.min(total - 1, n));
+        if (nxt === cur) return;
+        cur = nxt;
         render();
       }
 
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') goto(i + 1);
-        else if (e.key === 'ArrowLeft') goto(i - 1);
+        if (e.key === 'ArrowRight') goto(cur + 1);
+        else if (e.key === 'ArrowLeft') goto(cur - 1);
       });
 
-      prev.addEventListener('click', () => goto(i - 1));
-      next.addEventListener('click', () => goto(i + 1));
+      prev.addEventListener('click', () => goto(cur - 1));
+      next.addEventListener('click', () => goto(cur + 1));
 
       // 触屏滑动
       let touchX = null;
@@ -166,13 +173,21 @@ const total = spreads.length;
       document.addEventListener('touchend', (e) => {
         if (touchX == null) return;
         const dx = e.changedTouches[0].clientX - touchX;
-        if (Math.abs(dx) > 40) goto(i + (dx < 0 ? 1 : -1));
+        if (Math.abs(dx) > 40) goto(cur + (dx < 0 ? 1 : -1));
         touchX = null;
       }, { passive: true });
 
       render();
-      hintShown = true;  // 初次 render 不算"用户翻了",让 hint 保留 4 秒后再淡出
       setTimeout(() => hint.classList.add('is-hidden'), 4000);
+
+      // 截图演示用:?flipping=N 让第 N 页停在翻到一半的状态(给静态截图看 3D 效果)
+      const flipParam = new URLSearchParams(location.search).get('flipping');
+      if (flipParam !== null) {
+        const idx = Math.max(0, Math.min(total - 1, parseInt(flipParam, 10) || 0));
+        papers[idx].style.transition = 'none';
+        papers[idx].style.transform = 'translate(-50%, -50%) rotateY(-55deg)';
+        papers[idx].style.boxShadow = '-30px 24px 80px rgba(0, 0, 0, 0.55)';
+      }
     })();
   </script>
 </Layout>
