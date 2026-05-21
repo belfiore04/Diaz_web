@@ -212,6 +212,19 @@ import Layout from '../layouts/Layout.astro';
       return { width: Math.floor(bookW / 2), height: Math.floor(bookH) };
     }
 
+    // 预加载所有图,确保翻页时下层页已 ready,不出现"翻页中两页内容叠在一起"的问题
+    let preloadDone = null;
+    function preloadAll() {
+      if (preloadDone) return preloadDone;
+      preloadDone = Promise.all(pageImages.map((src) => new Promise((res) => {
+        const img = new Image();
+        img.onload = () => res();
+        img.onerror = () => res();
+        img.src = src;
+      })));
+      return preloadDone;
+    }
+
     function initBook() {
       if (pageFlip) return;
       const { width, height } = computeBookSize();
@@ -221,8 +234,7 @@ import Layout from '../layouts/Layout.astro';
         size: 'fixed',
         showCover: false,
         flippingTime: 900,
-        maxShadowOpacity: 0.5,
-        drawShadow: true,
+        drawShadow: false,          // ← 关掉书脊中央 + 翻页阴影,jun 不要
         usePortrait: false,
         mobileScrollSupport: false,
         swipeDistance: 30,
@@ -241,7 +253,8 @@ import Layout from '../layouts/Layout.astro';
       isOpen = true;
       overlay.setAttribute('aria-hidden', 'false');
       overlay.classList.add('is-open');
-      initBook();
+      // 预加载完成后再 init,避免翻页时下层 image 还没解码出现重叠
+      preloadAll().then(() => initBook());
     }
 
     function closeBook() {
