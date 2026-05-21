@@ -1,0 +1,96 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// 桌面 cover spread — figma frame 1968 × 1440 (TB内容Page > cover)
+// 坐标基准: cqw = 1968, vh = 1440
+const cqw = (px: number) => `${(px / 1968 * 100).toFixed(3)}cqw`;
+const vh  = (px: number) => `${(px / 1440 * 100).toFixed(3)}vh`;
+---
+
+<Layout
+  title="桌面 · Table — 李多迪"
+  bgImage="/TB.png"
+  navColor="#fff"
+  logoColor="#E50000"
+  highlightColor="#0050FF"
+>
+  <style define:vars={{
+    rect12L: cqw(1739), rect12W: cqw(229),
+    rect13L: cqw(1590), rect13W: cqw(378), rect13H: vh(125),
+    titleL:  cqw(1481), titleW: cqw(487),
+    titleZhT: vh(363),  titleEnT: vh(447),
+    titleFs: cqw(64),   titleLh: vh(83.712),
+    copyL: cqw(842), copyT: vh(748), copyW: cqw(943),
+    copyFs: cqw(48), copyLh: vh(62.784),
+  }}>
+    .desk-stage {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      container-type: inline-size;
+      overflow: hidden;
+    }
+    .cover { position: absolute; inset: 0; }
+
+    .rect-blue {
+      position: absolute;
+      left: var(--rect12L);
+      top: 0;
+      width: var(--rect12W);
+      height: 100%;
+      background: #0050FF;
+    }
+    .rect-red {
+      position: absolute;
+      left: var(--rect13L);
+      top: 0;
+      width: var(--rect13W);
+      height: var(--rect13H);
+      background: #E50000;
+    }
+
+    .title-zh, .title-en {
+      position: absolute;
+      left: var(--titleL);
+      width: var(--titleW);
+      font-family: 'Assistant', 'Noto Serif SC', sans-serif;
+      font-weight: 700;
+      font-size: var(--titleFs);
+      line-height: var(--titleLh);
+      letter-spacing: 0;
+      white-space: pre;
+    }
+    .title-zh { top: var(--titleZhT); color: #0050FF; }
+    .title-en { top: var(--titleEnT); color: #E50000; }
+
+    .copy {
+      position: absolute;
+      left: var(--copyL);
+      top: var(--copyT);
+      width: var(--copyW);
+      font-family: 'Assistant', 'Noto Serif SC', sans-serif;
+      font-weight: 700;
+      font-size: var(--copyFs);
+      line-height: var(--copyLh);
+      color: #000;
+      text-align: right;
+      white-space: pre-wrap;
+    }
+  </style>
+
+  <section class="desk-stage">
+    <div class="cover">
+      <div class="rect-blue"></div>
+      <div class="rect-red"></div>
+      <div class="title-zh">桌    子</div>
+      <div class="title-en">T a     b       le</div>
+      <div class="copy">我一直想有一张玻璃桌子
+
+大大的
+
+边缘的切角特别漂亮
+
+我可以把我喜欢的东西都放在上面</div>
+    </div>
+  </section>
+</Layout>
