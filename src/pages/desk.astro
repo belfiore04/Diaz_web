@@ -123,13 +123,12 @@ import Layout from '../layouts/Layout.astro';
       opacity: 0;
       transform: scale(0.4);
       transition: opacity 0.55s 0.1s ease, transform 0.6s 0.05s cubic-bezier(0.2, 0.6, 0.2, 1);
-      perspective: 2400px;
     }
     .book-overlay.is-open .book-stage {
       opacity: 1; transform: scale(1);
     }
 
-    /* 书容器 — 16:9 双页 */
+    /* 书容器 — 16:9 双页;无翻页动画,瞬间切换 */
     .book-viewport {
       position: relative;
       width: var(--book-width, 80vw);
@@ -137,7 +136,6 @@ import Layout from '../layouts/Layout.astro';
       max-width: 92vw;
       max-height: 88vh;
       display: flex;
-      transform-style: preserve-3d;
       cursor: zoom-in;
       background: #FFFFFF;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
@@ -154,58 +152,6 @@ import Layout from '../layouts/Layout.astro';
       object-fit: fill;
       user-select: none;
       -webkit-user-drag: none;
-      /* 静止时无 transform → 字 1:1 清晰 */
-    }
-
-    /* 翻页临时纸:层叠在 spread 上方,backface 自动切面 */
-    .flip-paper {
-      position: absolute;
-      top: 0;
-      width: 50%;
-      height: 100%;
-      transform-style: preserve-3d;
-      z-index: 10;
-      pointer-events: none;
-      will-change: transform;
-    }
-    .flip-paper .face {
-      position: absolute;
-      inset: 0;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      overflow: hidden;
-      background: #FFFFFF;
-    }
-    .flip-paper .face img {
-      display: block;
-      width: 100%; height: 100%;
-      object-fit: fill;
-      pointer-events: none;
-    }
-    .flip-paper .face.back { transform: rotateY(180deg); }
-
-    /* 翻向左 — 下一页:纸挂在右半,绕左边翻 */
-    .flip-paper.forward {
-      right: 0;
-      transform-origin: 0% 50%;
-      animation: flip-forward 0.85s cubic-bezier(0.45, 0, 0.25, 1) forwards;
-    }
-    @keyframes flip-forward {
-      0%   { transform: rotateY(0deg); }
-      45%  { transform: rotateY(-78deg) translateZ(40px); }
-      100% { transform: rotateY(-180deg); }
-    }
-
-    /* 翻向右 — 上一页:纸挂在左半,绕右边翻 */
-    .flip-paper.backward {
-      left: 0;
-      transform-origin: 100% 50%;
-      animation: flip-backward 0.85s cubic-bezier(0.45, 0, 0.25, 1) forwards;
-    }
-    @keyframes flip-backward {
-      0%   { transform: rotateY(0deg); }
-      45%  { transform: rotateY(78deg) translateZ(40px); }
-      100% { transform: rotateY(180deg); }
     }
 
     /* 页码 + 提示 */
@@ -282,7 +228,7 @@ import Layout from '../layouts/Layout.astro';
 
     <div class="book-pager" id="book-pager">
       <span id="pager-num">1 / 1</span>
-      <span class="hint">← / →  单击放大  ESC 关闭</span>
+      <span class="hint">← / → 翻页 · 单击放大 · ESC 关闭</span>
     </div>
   </div>
 
@@ -327,7 +273,6 @@ import Layout from '../layouts/Layout.astro';
 
     let curSpread = 0;
     let isOpen = false;
-    let isFlipping = false;
 
     // 预加载所有图
     let preloadDone = null;
@@ -364,58 +309,20 @@ import Layout from '../layouts/Layout.astro';
       flankNext.disabled = (curSpread >= spreads.length - 1);
     }
 
-    function makePaper(direction, frontSrc, backSrc) {
-      const paper = document.createElement('div');
-      paper.className = `flip-paper ${direction}`;
-      paper.innerHTML = `
-        <div class="face front"><img src="${frontSrc || ''}" alt=""></div>
-        <div class="face back"><img src="${backSrc || ''}" alt=""></div>
-      `;
-      return paper;
-    }
-
-    // 翻页动画时长(必须跟 CSS keyframes 一致)
-    const FLIP_MS = 850;
-
-    function finishFlip(paper, safety) {
-      if (safety) clearTimeout(safety);
-      if (paper && paper.parentNode) paper.remove();
-      isFlipping = false;
-    }
-
-    function runFlip(direction, frontSrc, backSrc) {
-      const paper = makePaper(direction, frontSrc, backSrc);
-      viewport.appendChild(paper);
-      // 强制 reflow,确保 animation 一定从 0 开始(防浏览器合并 reflow 导致动画不触发)
-      void paper.offsetWidth;
-      // 兜底:即便 animationend 因任何原因没触发,FLIP_MS + 200ms 后强制收尾
-      const safety = setTimeout(() => finishFlip(paper, null), FLIP_MS + 200);
-      paper.addEventListener('animationend', () => finishFlip(paper, safety), { once: true });
-    }
-
     function flipNext() {
-      if (isFlipping || curSpread >= spreads.length - 1) return;
-      isFlipping = true;
-      const oldRight = spreads[curSpread][1];
-      const newLeft  = spreads[curSpread + 1][0];
+      if (curSpread >= spreads.length - 1) return;
       curSpread++;
-      renderSpread();             // 立刻换容器内容,纸盖住看不到
-      runFlip('forward', oldRight, newLeft);
+      renderSpread();
     }
 
     function flipPrev() {
-      if (isFlipping || curSpread <= 0) return;
-      isFlipping = true;
-      const oldLeft  = spreads[curSpread][0];
-      const newRight = spreads[curSpread - 1][1];
+      if (curSpread <= 0) return;
       curSpread--;
       renderSpread();
-      runFlip('backward', oldLeft, newRight);
     }
 
     // 单击书 = 放大 lightbox
     function openZoom() {
-      if (isFlipping) return;
       zoomPair.innerHTML = '';
       const sp = spreads[curSpread];
       const showLeft = sp[0] && sp[0] !== '/desk/page--blank.webp';
