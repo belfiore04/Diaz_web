@@ -1,243 +1,296 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-// 桌面 · Table — 真翻书 demo
-// 每页绕"左边轴" rotateY -180° 翻起,backface-visibility:hidden 让翻过的页自动让位
-// 翻页:键盘 ← → / 点击页面左右半边 / 触屏左右滑
-const spreads = [
-  { src: '/desk-cover.png',  label: '封面' },
-  { src: '/desk-page12.png', label: '目录' },
-  { src: '/desk-page34.png', label: '阿卡贝拉' },
-];
-const total = spreads.length;
+// 桌面 · Table
+// 初始:玻璃桌 + 一本杂志贴图(figma TB 主页 1:1 复刻)
+// 点击杂志 → 全屏覆盖,StPageFlip 真曲面翻页
+// ESC / 关闭按钮 → 收回桌面
 ---
 
 <Layout
   title="桌面 · Table — 李多迪"
-  bgImage="/desk-bg.png"
+  bgImage="/desk/TB-bg.png"
   navColor="#fff"
   logoColor="#E50000"
   highlightColor="#0050FF"
 >
-  <style define:vars={{ total: String(total) }}>
-    .desk-viewport {
+  <style>
+    /* 桌面主视图 — 杂志贴图按 figma 1:1 定位
+       figma TB 主页 2560×1440,杂志贴图 1038×993 @ (1328,224 相对 frame)
+       nav 区在 figma 左 ~520px (20.3%),主区右 80%
+       杂志相对主区 left = (1328-520)/2040 ≈ 39.6%, top = 224/1440 ≈ 15.6%
+       width = 1038/2040 ≈ 51%
+    */
+    .desk-room {
       position: relative;
       width: 100%;
       height: 100vh;
       overflow: hidden;
     }
-    /* 翻书舞台 — 3D perspective 容器 */
-    .book-stage {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      perspective: 2600px;
-      perspective-origin: 30% 50%;
+    .magazine-sticker {
+      position: absolute;
+      left: 39.6%;
+      top: 15.6%;
+      width: 51%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      transition: transform 0.4s cubic-bezier(0.2, 0.6, 0.2, 1), filter 0.4s ease;
+      transform-origin: 50% 50%;
+      will-change: transform, filter;
+      filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25));
     }
-    /* 每张纸:堆叠在同一位置,以左边为轴翻起 */
-    .paper {
+    .magazine-sticker:hover {
+      transform: scale(1.025) translateY(-4px);
+      filter: drop-shadow(0 20px 36px rgba(0, 0, 0, 0.35));
+    }
+    .magazine-sticker img {
+      display: block;
+      width: 100%;
+      height: auto;
+      pointer-events: none;
+    }
+    .sticker-hint {
       position: absolute;
       left: 50%;
-      top: 50%;
-      width: 92%;
-      aspect-ratio: 1968 / 1440;
-      max-height: 88vh;
-      margin: 0;
-      transform: translate(-50%, -50%) translateZ(0) rotateY(0deg) rotateZ(0deg);
-      transform-origin: 0% 50%;
-      transform-style: preserve-3d;
-      backface-visibility: hidden;
-      background: #FAFAFA;
-      background-repeat: no-repeat;
-      background-size: 100% 100%;
-      background-position: center;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35),
-                  0 4px 12px rgba(0, 0, 0, 0.18);
-      border-radius: 2px;
-      will-change: transform, box-shadow;
-    }
-    /* z-index:cover 在最上(data-i=0),后面页层层在下 */
-    .paper[data-i="0"] { z-index: 30; }
-    .paper[data-i="1"] { z-index: 20; }
-    .paper[data-i="2"] { z-index: 10; }
-
-    /* 翻过的页:rotateY -180° 静止终态 */
-    .paper[data-flipped="true"] {
-      transform: translate(-50%, -50%) translateZ(0) rotateY(-180deg) rotateZ(0deg);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
-    }
-
-    /* 翻出去:三段式 — 抬起 80px,中间 90° 微歪 rotateZ,阴影涨到最大 */
-    @keyframes paper-flip-out {
-      0% {
-        transform: translate(-50%, -50%) translateZ(0) rotateY(0deg) rotateZ(0deg);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
-      }
-      45% {
-        transform: translate(-50%, -50%) translateZ(70px) rotateY(-78deg) rotateZ(-1.2deg);
-        box-shadow: -50px 50px 120px rgba(0, 0, 0, 0.55), -10px 20px 30px rgba(0, 0, 0, 0.25);
-      }
-      100% {
-        transform: translate(-50%, -50%) translateZ(0) rotateY(-180deg) rotateZ(0deg);
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
-      }
-    }
-    /* 翻回来:反向同款节奏 */
-    @keyframes paper-flip-in {
-      0% {
-        transform: translate(-50%, -50%) translateZ(0) rotateY(-180deg) rotateZ(0deg);
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
-      }
-      55% {
-        transform: translate(-50%, -50%) translateZ(70px) rotateY(-102deg) rotateZ(-1.2deg);
-        box-shadow: -50px 50px 120px rgba(0, 0, 0, 0.55), -10px 20px 30px rgba(0, 0, 0, 0.25);
-      }
-      100% {
-        transform: translate(-50%, -50%) translateZ(0) rotateY(0deg) rotateZ(0deg);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
-      }
-    }
-    .paper.is-flipping-out {
-      animation: paper-flip-out 1.15s cubic-bezier(0.45, 0, 0.25, 1) forwards;
-    }
-    .paper.is-flipping-in {
-      animation: paper-flip-in 1.15s cubic-bezier(0.45, 0, 0.25, 1) forwards;
-    }
-
-    /* 左右点击区域,占整 viewport 各一半 */
-    .click-prev, .click-next {
-      position: absolute;
-      top: 0;
-      height: 100%;
-      width: 50%;
-      z-index: 50;
-      background: transparent;
-      border: 0;
-      padding: 0;
-      cursor: w-resize;
-    }
-    .click-prev { left: 0; }
-    .click-next { right: 0; cursor: e-resize; }
-    .click-prev:disabled, .click-next:disabled { cursor: default; }
-
-    /* 页码 */
-    .pager {
-      position: absolute;
-      bottom: 3.5vh;
-      right: 2.5vw;
-      z-index: 60;
-      color: #fff;
+      bottom: 8vh;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.9);
       font-family: 'Kameron', serif;
-      font-weight: 700;
-      font-size: clamp(14px, 1.2vw, 22px);
+      font-size: clamp(13px, 1vw, 18px);
       letter-spacing: 0.18em;
       text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
-      user-select: none;
       pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      animation: hint-fade-in 1.2s 0.6s ease forwards;
     }
-    .hint {
+    @keyframes hint-fade-in { to { opacity: 1; } }
+
+    /* 翻书全屏遮罩 */
+    .book-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: rgba(8, 12, 10, 0);
+      backdrop-filter: blur(0px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      transition: background 0.5s ease, backdrop-filter 0.5s ease;
+    }
+    .book-overlay.is-open {
+      background: rgba(8, 12, 10, 0.88);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+    }
+    .book-stage {
+      position: relative;
+      opacity: 0;
+      transform: scale(0.4);
+      transition: opacity 0.55s 0.1s ease, transform 0.6s 0.05s cubic-bezier(0.2, 0.6, 0.2, 1);
+    }
+    .book-overlay.is-open .book-stage {
+      opacity: 1;
+      transform: scale(1);
+    }
+    #book-canvas {
+      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.65);
+    }
+    .book-close {
       position: absolute;
-      bottom: 3.5vh;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 60;
-      color: rgba(255, 255, 255, 0.85);
+      top: 3vh;
+      right: 3vw;
+      z-index: 10;
+      width: 48px;
+      height: 48px;
+      border: 0;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
       font-family: 'Kameron', serif;
-      font-size: clamp(11px, 0.9vw, 16px);
-      letter-spacing: 0.12em;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      font-size: 22px;
+      line-height: 1;
+      border-radius: 50%;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .book-close:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: scale(1.08);
+    }
+    .book-pager {
+      position: absolute;
+      left: 50%;
+      bottom: 4vh;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.8);
+      font-family: 'Kameron', serif;
+      font-size: 14px;
+      letter-spacing: 0.18em;
       user-select: none;
       pointer-events: none;
-      transition: opacity 0.5s ease;
     }
-    .hint.is-hidden { opacity: 0; }
   </style>
 
-  <section class="desk-viewport">
-    <div class="book-stage" id="book-stage">
-      {spreads.map((s, i) => (
-        <div class="paper" data-i={i} style={`background-image: url('${s.src}')`}></div>
-      ))}
-    </div>
-    <button class="click-prev" aria-label="上一页" id="btn-prev"></button>
-    <button class="click-next" aria-label="下一页" id="btn-next"></button>
-    <div class="pager" id="pager">1 / {total}</div>
-    <div class="hint" id="hint">← / →  或 点击左右 翻页</div>
+  <section class="desk-room">
+    <button class="magazine-sticker" id="magazine-sticker" aria-label="打开杂志">
+      <img src="/desk/magazine-sticker.png" alt="桌上的一本杂志" />
+    </button>
+    <div class="sticker-hint">点击杂志,翻开看看</div>
   </section>
 
-  <script is:inline define:vars={{ total }}>
-    (() => {
-      const papers = document.querySelectorAll('.paper');
-      const pager = document.getElementById('pager');
-      const hint = document.getElementById('hint');
-      const prev = document.getElementById('btn-prev');
-      const next = document.getElementById('btn-next');
+  <!-- 翻书 overlay -->
+  <div class="book-overlay" id="book-overlay" aria-hidden="true">
+    <button class="book-close" id="book-close" aria-label="关闭">×</button>
+    <div class="book-stage" id="book-stage">
+      <div id="book-canvas"></div>
+    </div>
+    <div class="book-pager" id="book-pager"></div>
+  </div>
 
-      const hashIdx = parseInt((location.hash || '').replace('#', ''), 10);
-      let cur = Number.isFinite(hashIdx) ? Math.max(0, Math.min(total - 1, hashIdx)) : 0;
+  <script>
+    import { PageFlip } from 'page-flip';
 
-      function render(animate) {
-        papers.forEach((p, i) => {
-          const willFlip = i < cur;
-          const wasFlipped = p.dataset.flipped === 'true';
-          if (animate && willFlip !== wasFlipped) {
-            // 状态变了:跑 keyframe 动画,动画结束再落到终态
-            p.classList.remove('is-flipping-out', 'is-flipping-in');
-            void p.offsetWidth; // 强制 reflow 让 animation 能重跑
-            p.classList.add(willFlip ? 'is-flipping-out' : 'is-flipping-in');
-            const onEnd = () => {
-              p.classList.remove('is-flipping-out', 'is-flipping-in');
-              p.dataset.flipped = willFlip ? 'true' : 'false';
-              p.removeEventListener('animationend', onEnd);
-            };
-            p.addEventListener('animationend', onEnd);
-          } else if (!animate) {
-            p.dataset.flipped = willFlip ? 'true' : 'false';
-          }
-        });
-        pager.textContent = `${cur + 1} / ${total}`;
-        prev.disabled = cur === 0;
-        next.disabled = cur === total - 1;
-        history.replaceState(null, '', '#' + cur);
-      }
+    const pageImages = [
+      '/desk/page-00-cover.png',
+      '/desk/page-01-cover-inside.png',
+      '/desk/page-02-feiye.png',
+      '/desk/page-03.png',
+      '/desk/page-04.png',
+      '/desk/page-05.png',
+      '/desk/page-06.png',
+      '/desk/page-07.png',
+      '/desk/page-08.png',
+      '/desk/page-09.png',
+      '/desk/page-10.png',
+      '/desk/page-11.png',
+      '/desk/page-12.png',
+      '/desk/page-13.png',
+      '/desk/page-14.png',
+      '/desk/page-15.png',
+      '/desk/page-16.png',
+      '/desk/page-17.png',
+      '/desk/page-18.png',
+      '/desk/page-19.png',
+      '/desk/page-20.png',
+      '/desk/page-21.png',
+      '/desk/page-22.png',
+      '/desk/page-23.png',
+      '/desk/page-24.png',
+    ];
 
-      function goto(n) {
-        const nxt = Math.max(0, Math.min(total - 1, n));
-        if (nxt === cur) return;
-        cur = nxt;
-        render(true);
-      }
+    const sticker = document.getElementById('magazine-sticker') as HTMLButtonElement;
+    const overlay = document.getElementById('book-overlay') as HTMLDivElement;
+    const canvasEl = document.getElementById('book-canvas') as HTMLDivElement;
+    const closeBtn = document.getElementById('book-close') as HTMLButtonElement;
+    const pagerEl = document.getElementById('book-pager') as HTMLDivElement;
+    // 把 overlay 移到 body 直接子级,逃离 site-main 的 stacking context
+    document.body.appendChild(overlay);
 
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') goto(cur + 1);
-        else if (e.key === 'ArrowLeft') goto(cur - 1);
+    let pageFlip: any = null;
+    let isOpen = false;
+
+    function computeBookSize() {
+      // 单页基准 1280×1440,书展开后 2560×1440 ≈ 16:9
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const maxW = vw * 0.92;
+      const maxH = vh * 0.88;
+      const ratio = 2560 / 1440;
+      let bookW = Math.min(maxW, maxH * ratio);
+      let bookH = bookW / ratio;
+      return { width: Math.floor(bookW / 2), height: Math.floor(bookH) };
+    }
+
+    function initBook() {
+      if (pageFlip) return;
+      const { width, height } = computeBookSize();
+      pageFlip = new PageFlip(canvasEl, {
+        width,
+        height,
+        size: 'fixed',
+        showCover: true,
+        flippingTime: 900,
+        maxShadowOpacity: 0.5,
+        drawShadow: true,
+        usePortrait: true,
+        mobileScrollSupport: false,
+        swipeDistance: 30,
+        startPage: 0,
       });
+      pageFlip.loadFromImages(pageImages);
+      pageFlip.on('flip', (e: any) => {
+        const idx = e.data as number;
+        pagerEl.textContent = `${idx + 1} / ${pageImages.length}`;
+      });
+      pagerEl.textContent = `1 / ${pageImages.length}`;
+    }
 
-      prev.addEventListener('click', () => goto(cur - 1));
-      next.addEventListener('click', () => goto(cur + 1));
+    function openBook() {
+      if (isOpen) return;
+      isOpen = true;
+      overlay.setAttribute('aria-hidden', 'false');
+      overlay.classList.add('is-open');
+      initBook();
+    }
 
-      // 触屏滑动
-      let touchX = null;
-      document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
-      document.addEventListener('touchend', (e) => {
-        if (touchX == null) return;
-        const dx = e.changedTouches[0].clientX - touchX;
-        if (Math.abs(dx) > 40) goto(cur + (dx < 0 ? 1 : -1));
-        touchX = null;
-      }, { passive: true });
+    function closeBook() {
+      if (!isOpen) return;
+      isOpen = false;
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
 
-      render(false);
-      setTimeout(() => hint.classList.add('is-hidden'), 4000);
+    sticker.addEventListener('click', openBook);
+    closeBtn.addEventListener('click', closeBook);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeBook();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen) closeBook();
+    });
+    // resize 时简单重建(rare path,destroy + 重新 init)
+    let resizeTimer: number | undefined;
+    // 截图用:?open=1 立刻打开;?page=N 跳到第 N 页
+    const qp = new URLSearchParams(location.search);
+    if (qp.get('open') === '1') {
+      setTimeout(() => {
+        openBook();
+        const p = parseInt(qp.get('page') || '0', 10);
+        if (p > 0 && pageFlip) {
+          setTimeout(() => pageFlip.flip(p), 200);
+        }
+      }, 100);
+    }
 
-      // 截图演示用:?flipping=N 让第 N 页停在 keyframe 中段(抬起 70px + 微歪)
-      const flipParam = new URLSearchParams(location.search).get('flipping');
-      if (flipParam !== null) {
-        const idx = Math.max(0, Math.min(total - 1, parseInt(flipParam, 10) || 0));
-        papers[idx].style.animation = 'none';
-        papers[idx].style.transition = 'none';
-        papers[idx].style.transform = 'translate(-50%, -50%) translateZ(70px) rotateY(-78deg) rotateZ(-1.2deg)';
-        papers[idx].style.boxShadow = '-50px 50px 120px rgba(0, 0, 0, 0.55), -10px 20px 30px rgba(0, 0, 0, 0.25)';
-      }
-    })();
+    window.addEventListener('resize', () => {
+      if (!pageFlip || !isOpen) return;
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        const curPage = pageFlip.getCurrentPageIndex?.() ?? 0;
+        try { pageFlip.destroy(); } catch {}
+        pageFlip = null;
+        const { width, height } = computeBookSize();
+        pageFlip = new PageFlip(canvasEl, {
+          width, height,
+          size: 'fixed',
+          showCover: true,
+          flippingTime: 900,
+          maxShadowOpacity: 0.5,
+          drawShadow: true,
+          usePortrait: true,
+          mobileScrollSupport: false,
+          swipeDistance: 30,
+          startPage: curPage,
+        });
+        pageFlip.loadFromImages(pageImages);
+        pageFlip.on('flip', (e: any) => {
+          pagerEl.textContent = `${(e.data as number) + 1} / ${pageImages.length}`;
+        });
+      }, 200);
+    });
   </script>
 </Layout>
