@@ -158,7 +158,10 @@ import Layout from '../layouts/Layout.astro';
   <script is:inline>
     const PageFlip = window.St.PageFlip;
 
+    // 第 0 张是透明虚拟左页,让 cover 成为 spread 0 的右页 → 画框始终保持 16:9 双页比例
+    // showCover:false 配合此,翻开后视觉是"杂志放在桌上,右边封面 / 左侧空"
     const pageImages = [
+      '/desk/page--blank.png',
       '/desk/page-00-cover.png',
       '/desk/page-01-cover-inside.png',
       '/desk/page-02-feiye.png',
@@ -216,20 +219,21 @@ import Layout from '../layouts/Layout.astro';
         width,
         height,
         size: 'fixed',
-        showCover: true,
+        showCover: false,
         flippingTime: 900,
         maxShadowOpacity: 0.5,
         drawShadow: true,
-        usePortrait: true,
+        usePortrait: false,
         mobileScrollSupport: false,
         swipeDistance: 30,
         startPage: 0,
       });
       pageFlip.loadFromImages(pageImages);
       pageFlip.on('flip', (e) => {
-        pagerEl.textContent = `${e.data + 1} / ${pageImages.length}`;
+        const cur = Math.max(1, e.data);
+        pagerEl.textContent = `${cur} / ${pageImages.length - 1}`;
       });
-      pagerEl.textContent = `1 / ${pageImages.length}`;
+      pagerEl.textContent = `1 / ${pageImages.length - 1}`;
     }
 
     function openBook() {
@@ -280,11 +284,11 @@ import Layout from '../layouts/Layout.astro';
         pageFlip = new PageFlip(canvasEl, {
           width, height,
           size: 'fixed',
-          showCover: true,
+          showCover: false,
           flippingTime: 900,
           maxShadowOpacity: 0.5,
           drawShadow: true,
-          usePortrait: true,
+          usePortrait: false,
           mobileScrollSupport: false,
           swipeDistance: 30,
           startPage: curPage,
