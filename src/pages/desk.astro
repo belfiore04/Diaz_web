@@ -9,17 +9,16 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout
   title="桌面 · Table — 李多迪"
-  bgImage="/desk/TB-bg.png"
+  bgImage="/desk/TB-bg.webp"
   navColor="#fff"
   logoColor="#E50000"
   highlightColor="#0050FF"
 >
   <style>
     /* 桌面主视图 — 杂志贴图按 figma 1:1 定位
-       figma TB 主页 2560×1440,杂志贴图 1038×993 @ (1328,224 相对 frame)
-       nav 区在 figma 左 ~520px (20.3%),主区右 80%
-       杂志相对主区 left = (1328-520)/2040 ≈ 39.6%, top = 224/1440 ≈ 15.6%
-       width = 1038/2040 ≈ 51%
+       figma TB 主页 2560×1440,杂志贴图 893×854 @ (1280,293 相对 frame)
+       nav ~520px,主区 2040
+       相对主区 left=37.3% top=20.3% width=43.8%
     */
     .desk-room {
       position: relative;
@@ -29,9 +28,9 @@ import Layout from '../layouts/Layout.astro';
     }
     .magazine-sticker {
       position: absolute;
-      left: 39.6%;
-      top: 15.6%;
-      width: 51%;
+      left: 37.3%;
+      top: 20.3%;
+      width: 43.8%;
       padding: 0;
       border: 0;
       background: transparent;
@@ -92,13 +91,13 @@ import Layout from '../layouts/Layout.astro';
       transform: scale(0.4);
       transition: opacity 0.55s 0.1s ease, transform 0.6s 0.05s cubic-bezier(0.2, 0.6, 0.2, 1);
     }
-    .book-overlay.is-open .book-stage {
-      opacity: 1;
-      transform: scale(1);
-    }
+    .book-overlay.is-open .book-stage { opacity: 1; transform: scale(1); }
     #book-canvas {
-      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.65);
+      /* 让 book-canvas 接收单击放大事件 */
+      cursor: zoom-in;
     }
+
+    /* 顶部右关闭 */
     .book-close {
       position: absolute;
       top: 3vh;
@@ -117,10 +116,44 @@ import Layout from '../layouts/Layout.astro';
       backdrop-filter: blur(10px);
       transition: background 0.2s ease, transform 0.2s ease;
     }
-    .book-close:hover {
-      background: rgba(255, 255, 255, 0.18);
-      transform: scale(1.08);
+    .book-close:hover { background: rgba(255, 255, 255, 0.18); transform: scale(1.08); }
+
+    /* 左右翻页热区:占两侧屏幕剩余空间(书外),指针箭头 */
+    .book-flank {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 20vw;
+      z-index: 5;
+      cursor: w-resize;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      transition: background 0.2s ease;
     }
+    .book-flank-left  { left: 0; }
+    .book-flank-right { right: 0; cursor: e-resize; }
+    .book-flank:hover { background: rgba(255, 255, 255, 0.02); }
+    .book-flank:disabled { cursor: default; }
+    .book-flank-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.7);
+      font-family: 'Kameron', serif;
+      font-size: clamp(36px, 4vw, 56px);
+      line-height: 1;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .book-flank:hover .book-flank-arrow,
+    .book-flank:focus-visible .book-flank-arrow { opacity: 1; }
+    .book-flank-left  .book-flank-arrow { left: 2vw; }
+    .book-flank-right .book-flank-arrow { right: 2vw; }
+    .book-flank:disabled .book-flank-arrow { opacity: 0.15; }
+
+    /* 页码 + 提示 */
     .book-pager {
       position: absolute;
       left: 50%;
@@ -132,12 +165,53 @@ import Layout from '../layouts/Layout.astro';
       letter-spacing: 0.18em;
       user-select: none;
       pointer-events: none;
+      display: flex;
+      gap: 1.5em;
+      align-items: baseline;
+    }
+    .book-pager .hint {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+    }
+
+    /* lightbox 放大单页 */
+    .book-zoom {
+      position: fixed;
+      inset: 0;
+      z-index: 9500;
+      background: rgba(0, 0, 0, 0.96);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .book-zoom.is-open { display: flex; opacity: 1; }
+    .book-zoom img {
+      max-width: 96vw;
+      max-height: 96vh;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.8);
+    }
+    .book-zoom-pair {
+      display: flex;
+      gap: 4px;
+      max-width: 96vw;
+      max-height: 96vh;
+    }
+    .book-zoom-pair img {
+      max-width: 48vw;
+      max-height: 96vh;
+      object-fit: contain;
     }
   </style>
 
   <section class="desk-room">
     <button class="magazine-sticker" id="magazine-sticker" aria-label="打开杂志">
-      <img src="/desk/magazine-sticker.png" alt="桌上的一本杂志" />
+      <img src="/desk/magazine-sticker.webp" alt="桌上的一本杂志" />
     </button>
     <div class="sticker-hint">点击杂志,翻开看看</div>
   </section>
@@ -145,74 +219,65 @@ import Layout from '../layouts/Layout.astro';
   <!-- 翻书 overlay -->
   <div class="book-overlay" id="book-overlay" aria-hidden="true">
     <button class="book-close" id="book-close" aria-label="关闭">×</button>
+
+    <!-- 左右翻页热区 -->
+    <button class="book-flank book-flank-left" id="flank-prev" aria-label="上一页">
+      <span class="book-flank-arrow">‹</span>
+    </button>
+    <button class="book-flank book-flank-right" id="flank-next" aria-label="下一页">
+      <span class="book-flank-arrow">›</span>
+    </button>
+
     <div class="book-stage" id="book-stage">
       <div id="book-canvas"></div>
     </div>
-    <div class="book-pager" id="book-pager"></div>
+
+    <div class="book-pager" id="book-pager">
+      <span id="pager-num">1 / 1</span>
+      <span class="hint">← / →  双击放大  ESC 关闭</span>
+    </div>
   </div>
 
-  <!-- StPageFlip UMD bundle:全局 St.PageFlip。
-       直接 script src 引入,绕过 page-flip 包没有 ESM exports 字段导致 Vite resolve 失败 -->
+  <!-- 放大 lightbox -->
+  <div class="book-zoom" id="book-zoom" aria-hidden="true">
+    <div class="book-zoom-pair" id="book-zoom-pair"></div>
+  </div>
+
   <script is:inline src="/vendor/page-flip.browser.js"></script>
 
   <script is:inline>
     const PageFlip = window.St.PageFlip;
 
-    // 第 0 张是透明虚拟左页,让 cover 成为 spread 0 的右页 → 画框始终保持 16:9 双页比例
-    // showCover:false 配合此,翻开后视觉是"杂志放在桌上,右边封面 / 左侧空"
+    // 39 单页 = 1 cover + 1 cover-inside + 1 扉页 + 17×2 内容 + 2 结尾;前面加 blank 让画框 16:9
     const pageImages = [
-      '/desk/page--blank.png',
-      '/desk/page-00-cover.png',
-      '/desk/page-01-cover-inside.png',
-      '/desk/page-02-feiye.png',
-      '/desk/page-03.png',
-      '/desk/page-04.png',
-      '/desk/page-05.png',
-      '/desk/page-06.png',
-      '/desk/page-07.png',
-      '/desk/page-08.png',
-      '/desk/page-09.png',
-      '/desk/page-10.png',
-      '/desk/page-11.png',
-      '/desk/page-12.png',
-      '/desk/page-13.png',
-      '/desk/page-14.png',
-      '/desk/page-15.png',
-      '/desk/page-16.png',
-      '/desk/page-17.png',
-      '/desk/page-18.png',
-      '/desk/page-19.png',
-      '/desk/page-20.png',
-      '/desk/page-21.png',
-      '/desk/page-22.png',
-      '/desk/page-23.png',
-      '/desk/page-24.png',
+      '/desk/page--blank.webp',
+      '/desk/page-00-cover.webp',
+      '/desk/page-01-cover-inside.webp',
+      '/desk/page-02-feiye.webp',
     ];
+    for (let i = 3; i <= 38; i++) {
+      pageImages.push(`/desk/page-${String(i).padStart(2, '0')}.webp`);
+    }
 
     const sticker = document.getElementById('magazine-sticker');
     const overlay = document.getElementById('book-overlay');
     const canvasEl = document.getElementById('book-canvas');
     const closeBtn = document.getElementById('book-close');
-    const pagerEl = document.getElementById('book-pager');
-    // 把 overlay 移到 body 直接子级,逃离 site-main 的 stacking context
+    const pagerNum = document.getElementById('pager-num');
+    const flankPrev = document.getElementById('flank-prev');
+    const flankNext = document.getElementById('flank-next');
+    const zoom = document.getElementById('book-zoom');
+    const zoomPair = document.getElementById('book-zoom-pair');
+
+    // 移出 site-main stacking context
     document.body.appendChild(overlay);
+    document.body.appendChild(zoom);
 
     let pageFlip = null;
     let isOpen = false;
+    let curPage = 0;
 
-    function computeBookSize() {
-      // 单页基准 1280×1440,书展开后 2560×1440 ≈ 16:9
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const maxW = vw * 0.92;
-      const maxH = vh * 0.88;
-      const ratio = 2560 / 1440;
-      let bookW = Math.min(maxW, maxH * ratio);
-      let bookH = bookW / ratio;
-      return { width: Math.floor(bookW / 2), height: Math.floor(bookH) };
-    }
-
-    // 预加载所有图,确保翻页时下层页已 ready,不出现"翻页中两页内容叠在一起"的问题
+    // 预加载所有 webp,翻页时下层图不会未解码
     let preloadDone = null;
     function preloadAll() {
       if (preloadDone) return preloadDone;
@@ -225,6 +290,25 @@ import Layout from '../layouts/Layout.astro';
       return preloadDone;
     }
 
+    function computeBookSize() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const maxW = vw * 0.88;   // 留 6vw 给左右翻页箭头
+      const maxH = vh * 0.88;
+      const ratio = 2560 / 1440;
+      const bookW = Math.min(maxW, maxH * ratio);
+      const bookH = bookW / ratio;
+      return { width: Math.floor(bookW / 2), height: Math.floor(bookH) };
+    }
+
+    function updatePager(idx) {
+      curPage = idx;
+      const cur = Math.max(1, idx);
+      pagerNum.textContent = `${cur} / ${pageImages.length - 1}`;
+      flankPrev.disabled = (idx <= 0);
+      flankNext.disabled = (idx >= pageImages.length - 1);
+    }
+
     function initBook() {
       if (pageFlip) return;
       const { width, height } = computeBookSize();
@@ -234,18 +318,15 @@ import Layout from '../layouts/Layout.astro';
         size: 'fixed',
         showCover: false,
         flippingTime: 900,
-        drawShadow: false,          // ← 关掉书脊中央 + 翻页阴影,jun 不要
-        usePortrait: false,
+        drawShadow: false,        // 关掉书脊 + 翻页阴影
+        usePortrait: false,       // 强制双页 landscape,画框 16:9
         mobileScrollSupport: false,
         swipeDistance: 30,
         startPage: 0,
       });
       pageFlip.loadFromImages(pageImages);
-      pageFlip.on('flip', (e) => {
-        const cur = Math.max(1, e.data);
-        pagerEl.textContent = `${cur} / ${pageImages.length - 1}`;
-      });
-      pagerEl.textContent = `1 / ${pageImages.length - 1}`;
+      pageFlip.on('flip', (e) => updatePager(e.data));
+      updatePager(0);
     }
 
     function openBook() {
@@ -253,63 +334,102 @@ import Layout from '../layouts/Layout.astro';
       isOpen = true;
       overlay.setAttribute('aria-hidden', 'false');
       overlay.classList.add('is-open');
-      // 预加载完成后再 init,避免翻页时下层 image 还没解码出现重叠
       preloadAll().then(() => initBook());
     }
-
     function closeBook() {
       if (!isOpen) return;
       isOpen = false;
       overlay.classList.remove('is-open');
       overlay.setAttribute('aria-hidden', 'true');
+      closeZoom();
     }
+
+    // 翻页 — 键盘 / 按钮 / 屏幕左右半边
+    function flipPrev() { if (pageFlip && curPage > 0) pageFlip.flipPrev(); }
+    function flipNext() { if (pageFlip && curPage < pageImages.length - 1) pageFlip.flipNext(); }
 
     sticker.addEventListener('click', openBook);
     closeBtn.addEventListener('click', closeBook);
+    flankPrev.addEventListener('click', flipPrev);
+    flankNext.addEventListener('click', flipNext);
+    // 点击蒙层(不是 stage 区域)关闭
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeBook();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && isOpen) closeBook();
+      if (!isOpen) return;
+      if (e.key === 'Escape') {
+        if (zoom.classList.contains('is-open')) closeZoom();
+        else closeBook();
+      }
+      else if (e.key === 'ArrowLeft')  flipPrev();
+      else if (e.key === 'ArrowRight') flipNext();
     });
-    // resize 时简单重建(rare path,destroy + 重新 init)
-    let resizeTimer;
-    // 截图用:?open=1 立刻打开;?page=N 跳到第 N 页
+
+    // 双击 book canvas → 放大当前 spread(左右两页拼一起看)
+    function openZoom() {
+      // 当前可见 spread 的左右页
+      // PageFlip flip event 的 data 是新的"右页"index;左页 = right - 1
+      // 不过初始 curPage = 0 时显示 spread = [0(blank), 1(cover)]
+      // 通用规则:spread 左 = curPage 的偶数对(向下取偶),右 = 左 + 1
+      let leftIdx, rightIdx;
+      if (curPage % 2 === 0) { leftIdx = curPage; rightIdx = curPage + 1; }
+      else                   { leftIdx = curPage - 1; rightIdx = curPage; }
+      leftIdx = Math.max(0, Math.min(pageImages.length - 1, leftIdx));
+      rightIdx = Math.max(0, Math.min(pageImages.length - 1, rightIdx));
+
+      zoomPair.innerHTML = '';
+      const showLeft = leftIdx > 0; // blank 占位不显示
+      if (showLeft) {
+        const il = document.createElement('img');
+        il.src = pageImages[leftIdx];
+        zoomPair.appendChild(il);
+      }
+      const ir = document.createElement('img');
+      ir.src = pageImages[rightIdx];
+      zoomPair.appendChild(ir);
+      // 只一张图时撑满
+      zoomPair.style.justifyContent = showLeft ? 'center' : 'center';
+
+      zoom.classList.add('is-open');
+      zoom.setAttribute('aria-hidden', 'false');
+    }
+    function closeZoom() {
+      zoom.classList.remove('is-open');
+      zoom.setAttribute('aria-hidden', 'true');
+    }
+    canvasEl.addEventListener('dblclick', openZoom);
+    zoom.addEventListener('click', closeZoom);
+
+    // 截图调试:?open=1&page=N
     const qp = new URLSearchParams(location.search);
     if (qp.get('open') === '1') {
       setTimeout(() => {
         openBook();
         const p = parseInt(qp.get('page') || '0', 10);
-        if (p > 0 && pageFlip) {
-          setTimeout(() => pageFlip.flip(p), 200);
-        }
+        if (p > 0) setTimeout(() => pageFlip && pageFlip.flip(p), 800);
       }, 100);
     }
 
+    // resize 重建
+    let resizeTimer;
     window.addEventListener('resize', () => {
       if (!pageFlip || !isOpen) return;
-      window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => {
-        const curPage = pageFlip.getCurrentPageIndex?.() ?? 0;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const cur = curPage;
         try { pageFlip.destroy(); } catch {}
         pageFlip = null;
         const { width, height } = computeBookSize();
         pageFlip = new PageFlip(canvasEl, {
-          width, height,
-          size: 'fixed',
-          showCover: false,
-          flippingTime: 900,
-          maxShadowOpacity: 0.5,
-          drawShadow: true,
-          usePortrait: false,
-          mobileScrollSupport: false,
-          swipeDistance: 30,
-          startPage: curPage,
+          width, height, size: 'fixed',
+          showCover: false, flippingTime: 900,
+          drawShadow: false, usePortrait: false,
+          mobileScrollSupport: false, swipeDistance: 30,
+          startPage: cur,
         });
         pageFlip.loadFromImages(pageImages);
-        pageFlip.on('flip', (e) => {
-          pagerEl.textContent = `${e.data + 1} / ${pageImages.length}`;
-        });
+        pageFlip.on('flip', (e) => updatePager(e.data));
       }, 200);
     });
   </script>
