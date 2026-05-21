@@ -374,20 +374,33 @@ import Layout from '../layouts/Layout.astro';
       return paper;
     }
 
+    // 翻页动画时长(必须跟 CSS keyframes 一致)
+    const FLIP_MS = 850;
+
+    function finishFlip(paper, safety) {
+      if (safety) clearTimeout(safety);
+      if (paper && paper.parentNode) paper.remove();
+      isFlipping = false;
+    }
+
+    function runFlip(direction, frontSrc, backSrc) {
+      const paper = makePaper(direction, frontSrc, backSrc);
+      viewport.appendChild(paper);
+      // 强制 reflow,确保 animation 一定从 0 开始(防浏览器合并 reflow 导致动画不触发)
+      void paper.offsetWidth;
+      // 兜底:即便 animationend 因任何原因没触发,FLIP_MS + 200ms 后强制收尾
+      const safety = setTimeout(() => finishFlip(paper, null), FLIP_MS + 200);
+      paper.addEventListener('animationend', () => finishFlip(paper, safety), { once: true });
+    }
+
     function flipNext() {
       if (isFlipping || curSpread >= spreads.length - 1) return;
       isFlipping = true;
       const oldRight = spreads[curSpread][1];
       const newLeft  = spreads[curSpread + 1][0];
-      const paper = makePaper('forward', oldRight, newLeft);
-      viewport.appendChild(paper);
-      // 翻页期间立刻把容器换成下一 spread —— 纸盖在上面看不到
       curSpread++;
-      renderSpread();
-      paper.addEventListener('animationend', () => {
-        paper.remove();
-        isFlipping = false;
-      });
+      renderSpread();             // 立刻换容器内容,纸盖住看不到
+      runFlip('forward', oldRight, newLeft);
     }
 
     function flipPrev() {
@@ -395,14 +408,9 @@ import Layout from '../layouts/Layout.astro';
       isFlipping = true;
       const oldLeft  = spreads[curSpread][0];
       const newRight = spreads[curSpread - 1][1];
-      const paper = makePaper('backward', oldLeft, newRight);
-      viewport.appendChild(paper);
       curSpread--;
       renderSpread();
-      paper.addEventListener('animationend', () => {
-        paper.remove();
-        isFlipping = false;
-      });
+      runFlip('backward', oldLeft, newRight);
     }
 
     // 单击书 = 放大 lightbox
