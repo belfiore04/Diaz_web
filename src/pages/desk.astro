@@ -151,8 +151,12 @@ import Layout from '../layouts/Layout.astro';
     <div class="book-pager" id="book-pager"></div>
   </div>
 
-  <script>
-    import { PageFlip } from 'page-flip';
+  <!-- StPageFlip UMD bundle:全局 St.PageFlip。
+       直接 script src 引入,绕过 page-flip 包没有 ESM exports 字段导致 Vite resolve 失败 -->
+  <script is:inline src="/vendor/page-flip.browser.js"></script>
+
+  <script is:inline>
+    const PageFlip = window.St.PageFlip;
 
     const pageImages = [
       '/desk/page-00-cover.png',
@@ -182,15 +186,15 @@ import Layout from '../layouts/Layout.astro';
       '/desk/page-24.png',
     ];
 
-    const sticker = document.getElementById('magazine-sticker') as HTMLButtonElement;
-    const overlay = document.getElementById('book-overlay') as HTMLDivElement;
-    const canvasEl = document.getElementById('book-canvas') as HTMLDivElement;
-    const closeBtn = document.getElementById('book-close') as HTMLButtonElement;
-    const pagerEl = document.getElementById('book-pager') as HTMLDivElement;
+    const sticker = document.getElementById('magazine-sticker');
+    const overlay = document.getElementById('book-overlay');
+    const canvasEl = document.getElementById('book-canvas');
+    const closeBtn = document.getElementById('book-close');
+    const pagerEl = document.getElementById('book-pager');
     // 把 overlay 移到 body 直接子级,逃离 site-main 的 stacking context
     document.body.appendChild(overlay);
 
-    let pageFlip: any = null;
+    let pageFlip = null;
     let isOpen = false;
 
     function computeBookSize() {
@@ -222,9 +226,8 @@ import Layout from '../layouts/Layout.astro';
         startPage: 0,
       });
       pageFlip.loadFromImages(pageImages);
-      pageFlip.on('flip', (e: any) => {
-        const idx = e.data as number;
-        pagerEl.textContent = `${idx + 1} / ${pageImages.length}`;
+      pageFlip.on('flip', (e) => {
+        pagerEl.textContent = `${e.data + 1} / ${pageImages.length}`;
       });
       pagerEl.textContent = `1 / ${pageImages.length}`;
     }
@@ -253,7 +256,7 @@ import Layout from '../layouts/Layout.astro';
       if (e.key === 'Escape' && isOpen) closeBook();
     });
     // resize 时简单重建(rare path,destroy + 重新 init)
-    let resizeTimer: number | undefined;
+    let resizeTimer;
     // 截图用:?open=1 立刻打开;?page=N 跳到第 N 页
     const qp = new URLSearchParams(location.search);
     if (qp.get('open') === '1') {
@@ -287,8 +290,8 @@ import Layout from '../layouts/Layout.astro';
           startPage: curPage,
         });
         pageFlip.loadFromImages(pageImages);
-        pageFlip.on('flip', (e: any) => {
-          pagerEl.textContent = `${(e.data as number) + 1} / ${pageImages.length}`;
+        pageFlip.on('flip', (e) => {
+          pagerEl.textContent = `${e.data + 1} / ${pageImages.length}`;
         });
       }, 200);
     });
