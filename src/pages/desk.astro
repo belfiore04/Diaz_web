@@ -3,8 +3,7 @@ import Layout from '../layouts/Layout.astro';
 
 // 桌面 · Table
 // 初始:玻璃桌 + 杂志贴图;点击杂志 → 全屏覆盖打开杂志
-// 翻页 = 自己手写 CSS 3D rotateY,静止 = 普通 img(字 1:1 清),只在翻页瞬间叠临时纸 transform
-// 单击书 = lightbox 放大左右两页;键盘 ← / → / 屏幕热区 / 按钮翻页;ESC 关
+// 翻页 = 瞬间切 spread;键盘 ← / → / 屏幕热区 / 按钮翻页;ESC 关
 ---
 
 <Layout
@@ -38,8 +37,6 @@ import Layout from '../layouts/Layout.astro';
       line-height: 1.308;
       color: #fff;
       text-align: right;
-      pointer-events: none;
-      user-select: none;
       z-index: 2;
     }
     .magazine-sticker {
@@ -62,7 +59,7 @@ import Layout from '../layouts/Layout.astro';
     }
     .sticker-hint {
       position: absolute;
-      left: 50%; bottom: 8vh;
+      left: 60%; bottom: 8vh;
       transform: translateX(-50%);
       color: rgba(255, 255, 255, 0.9);
       font-family: 'Kameron', serif;
@@ -156,7 +153,6 @@ import Layout from '../layouts/Layout.astro';
       max-width: 92vw;
       max-height: 88vh;
       display: flex;
-      cursor: zoom-in;
       background: #FFFFFF;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
     }
@@ -174,7 +170,7 @@ import Layout from '../layouts/Layout.astro';
       -webkit-user-drag: none;
     }
 
-    /* 页码 + 提示 */
+    /* 页码 + 提示 — 仅书打开时显示 */
     .book-pager {
       position: absolute;
       left: 50%; bottom: 4vh;
@@ -188,36 +184,14 @@ import Layout from '../layouts/Layout.astro';
       display: flex;
       gap: 1.5em;
       align-items: baseline;
+      opacity: 0;
+      transition: opacity 0.4s ease;
     }
+    .book-overlay.is-open .book-pager { opacity: 1; }
     .book-pager .hint {
       color: rgba(255, 255, 255, 0.4);
       font-size: 11px;
       letter-spacing: 0.12em;
-    }
-
-    /* 放大 lightbox */
-    .book-zoom {
-      position: fixed; inset: 0;
-      z-index: 9500;
-      background: rgba(0, 0, 0, 0.96);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      cursor: zoom-out;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-    }
-    .book-zoom.is-open { display: flex; opacity: 1; }
-    .book-zoom-pair {
-      display: flex;
-      gap: 4px;
-      max-width: 96vw;
-      max-height: 96vh;
-    }
-    .book-zoom-pair img {
-      max-width: 48vw;
-      max-height: 96vh;
-      object-fit: contain;
     }
   </style>
 
@@ -254,12 +228,8 @@ import Layout from '../layouts/Layout.astro';
 
     <div class="book-pager" id="book-pager">
       <span id="pager-num">1 / 1</span>
-      <span class="hint">← / → 翻页 · 单击放大 · ESC 关闭</span>
+      <span class="hint">← / → 翻页 · ESC 关闭</span>
     </div>
-  </div>
-
-  <div class="book-zoom" id="book-zoom" aria-hidden="true">
-    <div class="book-zoom-pair" id="book-zoom-pair"></div>
   </div>
 
   <script is:inline>
@@ -290,12 +260,9 @@ import Layout from '../layouts/Layout.astro';
     const leftSlot = document.getElementById('bf-left').querySelector('img');
     const rightSlot = document.getElementById('bf-right').querySelector('img');
     const pagerNum = document.getElementById('pager-num');
-    const zoom = document.getElementById('book-zoom');
-    const zoomPair = document.getElementById('book-zoom-pair');
 
     // 移出 site-main stacking context
     document.body.appendChild(overlay);
-    document.body.appendChild(zoom);
 
     let curSpread = 0;
     let isOpen = false;
@@ -347,29 +314,6 @@ import Layout from '../layouts/Layout.astro';
       renderSpread();
     }
 
-    // 单击书 = 放大 lightbox
-    function openZoom() {
-      zoomPair.innerHTML = '';
-      const sp = spreads[curSpread];
-      const showLeft = sp[0] && sp[0] !== '/desk/page--blank.webp';
-      if (showLeft) {
-        const il = document.createElement('img');
-        il.src = sp[0];
-        zoomPair.appendChild(il);
-      }
-      if (sp[1]) {
-        const ir = document.createElement('img');
-        ir.src = sp[1];
-        zoomPair.appendChild(ir);
-      }
-      zoom.classList.add('is-open');
-      zoom.setAttribute('aria-hidden', 'false');
-    }
-    function closeZoom() {
-      zoom.classList.remove('is-open');
-      zoom.setAttribute('aria-hidden', 'true');
-    }
-
     // 翻书 open/close
     function openBook() {
       if (isOpen) return;
@@ -387,7 +331,6 @@ import Layout from '../layouts/Layout.astro';
       isOpen = false;
       overlay.classList.remove('is-open');
       overlay.setAttribute('aria-hidden', 'true');
-      closeZoom();
     }
 
     // 事件绑定
@@ -396,22 +339,14 @@ import Layout from '../layouts/Layout.astro';
     flankPrev.addEventListener('click', flipPrev);
     flankNext.addEventListener('click', flipNext);
 
-    // 单击书 viewport → 放大;但不要拦截 flank 等按钮(它们 z-index 高)
-    viewport.addEventListener('click', openZoom);
-
     overlay.addEventListener('click', (e) => {
       // 点击 overlay 蒙层(不是 viewport 或按钮)关闭
       if (e.target === overlay) closeBook();
     });
 
-    zoom.addEventListener('click', closeZoom);
-
     document.addEventListener('keydown', (e) => {
       if (!isOpen) return;
-      if (e.key === 'Escape') {
-        if (zoom.classList.contains('is-open')) closeZoom();
-        else closeBook();
-      }
+      if (e.key === 'Escape')          closeBook();
       else if (e.key === 'ArrowLeft')  flipPrev();
       else if (e.key === 'ArrowRight') flipNext();
     });
