@@ -5,6 +5,7 @@ interface Props {
   title?: string;
   description?: string;
   currentProject?: string;
+  currentCorner?: 'desk';
   bgImage?: string;
   highlightColor?: string;
   bgOverlay?: number; // 0~1, 背景图上的黑色遮罩透明度
@@ -16,6 +17,7 @@ const {
   title = '李多迪 — Diaz Lee',
   description = '李多迪的个人作品集',
   currentProject,
+  currentCorner,
   bgImage = '/SC.png',
   highlightColor = '#0051FF',
   bgOverlay = 0,
@@ -129,6 +131,8 @@ const projects = [
       .nav-project[data-current="true"],
       .nav-project[data-current="true"]:hover { color: var(--highlightColor); }
       .nav-corner { margin-top: clamp(30px, 9vh, 130px); }
+      .nav-corner[data-current="true"],
+      .nav-corner[data-current="true"]:hover { color: var(--highlightColor); }
       .site-main {
         margin-left: var(--main-left);
         min-height: 100vh;
@@ -178,7 +182,11 @@ const projects = [
         ))}
       </div>
 
-      <a href="/desk" class="nav-corner">桌面 · Table</a>
+      <a
+        href="/desk"
+        class="nav-corner"
+        data-current={currentCorner === 'desk' ? 'true' : 'false'}
+      >桌面 · Table</a>
     </nav>
 
     <main class="site-main">

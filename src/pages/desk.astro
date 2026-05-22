@@ -11,8 +11,9 @@ import Layout from '../layouts/Layout.astro';
   title="桌面 · Table — 李多迪"
   bgImage="/desk/TB-bg.webp"
   navColor="#fff"
-  logoColor="#E50000"
-  highlightColor="#0050FF"
+  logoColor="#fff"
+  highlightColor="#E50000"
+  currentCorner="desk"
 >
   <style>
     /* 桌面主视图 — 杂志贴图按 figma 1:1 (893×854 @ 1280,293) */
@@ -21,6 +22,25 @@ import Layout from '../layouts/Layout.astro';
       width: 100%;
       height: 100vh;
       overflow: hidden;
+    }
+
+    /* figma 「我一直想有一张玻璃桌子...」段落, 杂志左侧, Assistant Bold 48px */
+    .desk-quote {
+      position: fixed;
+      left: 0;
+      width: 49vw;
+      top: 42vh;
+      margin: 0;
+      padding: 0;
+      font-family: 'Assistant', 'Noto Serif SC', 'Songti SC', serif;
+      font-weight: 700;
+      font-size: clamp(18px, 1.875vw, 48px);
+      line-height: 1.308;
+      color: #fff;
+      text-align: right;
+      pointer-events: none;
+      user-select: none;
+      z-index: 2;
     }
     .magazine-sticker {
       position: absolute;
@@ -202,6 +222,12 @@ import Layout from '../layouts/Layout.astro';
   </style>
 
   <section class="desk-room">
+    <p class="desk-quote">
+      我一直想有一张玻璃桌子<br/><br/>
+      大大的<br/><br/>
+      边缘的切角特别漂亮<br/><br/>
+      我可以把我喜欢的东西都放在上面
+    </p>
     <button class="magazine-sticker" id="magazine-sticker" aria-label="打开杂志">
       <img src="/desk/magazine-sticker.webp" alt="桌上的一本杂志" />
     </button>
